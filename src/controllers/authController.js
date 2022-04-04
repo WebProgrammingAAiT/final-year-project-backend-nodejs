@@ -5,8 +5,17 @@ import jwt from "jsonwebtoken";
 const authCtrl = {
   signup: async (req, res) => {
     try {
-      const { email, username, password } = req.body;
+      const { email, username, password,role } = req.body;
+      if(!email || !username || !password || !role){
+        return res.status(400).json({msg: "Please fill all the fields"});
+      }
 
+      if(role!=='propertyAdminUser' && role!=='departmentUser'){
+        return res.status(400).json({ msg: "Role must be propertyAdminUser or departmentUser" });
+      }
+      if(role == 'departmentUser' && !req.body.department){
+        return res.status(400).json({ msg: "Department is required" });
+      }
       const user = await UserCollection.findOne({
         username,
       });
@@ -19,11 +28,16 @@ const authCtrl = {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = await UserCollection.create({
+      let newUser ={
         email,
         username,
         password: hashedPassword,
-      });
+        role,
+      }
+      if(role == 'departmentUser' ){
+        newUser.department = req.body.department;
+      }
+       await UserCollection.create(newUser);
       return res.status(201).json({ msg: "User registered successfully" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

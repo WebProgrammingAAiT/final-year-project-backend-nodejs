@@ -22,6 +22,10 @@ const userSchema = mongoose.Schema(
       enum: ["admin", "propertyAdminUser","departmentUser"],
       default: "departmentUser",
     },
+    department:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+    }
   },
   { timestamps: true }
 );

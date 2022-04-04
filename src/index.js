@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import authRoute from './routes/authRoute.js';
+import departmentRoute from './routes/departmentRoute.js';
 
 // *Useful for getting environment vairables
 dotenv.config();
@@ -18,10 +19,11 @@ app.use(cookieParser());
 app.get("/", (req, res) => res.json("Online"));
 
 app.use('/api',authRoute);
+app.use('/api',departmentRoute);
 
 //db connection
 mongoose
-  .connect(process.env.MONGODB_URL_LOCAL, { useNewUrlParser: true })
+  .connect(process.env.MONGODB_URL_ONLINE, { useNewUrlParser: true })
   .then(() => console.log("Connected to db"))
   .catch((error) => console.log(error));
 

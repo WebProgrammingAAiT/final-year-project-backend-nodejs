@@ -46,10 +46,14 @@ const authCtrl = {
 
   signin: async (req, res) => {
     try {
+      const { emailOrUsername, password } = req.body;
+      if(!emailOrUsername || !password){
+        return res.status(400).json({msg: "Please fill all the fields"});
+      }
       const user = await UserCollection.findOne({
         $or: [
-          { email: req.body.emailOrUsername },
-          { username: req.body.emailOrUsername },
+          { email:emailOrUsername },
+          { username: emailOrUsername },
         ],
       });
       if (!user) {
@@ -59,7 +63,7 @@ const authCtrl = {
       }
 
       const isCorrectPassword = await bcrypt.compare(
-        req.body.password,
+        password,
         user.password
       );
       if (!isCorrectPassword)

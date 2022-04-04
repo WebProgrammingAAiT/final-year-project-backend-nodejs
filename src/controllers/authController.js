@@ -5,39 +5,39 @@ import jwt from "jsonwebtoken";
 const authCtrl = {
   signup: async (req, res) => {
     try {
-      const { email, username, password,role } = req.body;
-      if(!email || !username || !password || !role){
-        return res.status(400).json({msg: "Please fill all the fields"});
+      const { email, username, password, role } = req.body;
+      if (!email || !username || !password || !role) {
+        return res.status(400).json({ msg: "Please fill all the fields" });
       }
 
-      if(role!=='propertyAdminUser' && role!=='departmentUser'){
-        return res.status(400).json({ msg: "Role must be propertyAdminUser or departmentUser" });
+      if (role !== "propertyAdminUser" && role !== "departmentUser") {
+        return res
+          .status(400)
+          .json({ msg: "Role must be propertyAdminUser or departmentUser" });
       }
-      if(role == 'departmentUser' && !req.body.department){
+      if (role == "departmentUser" && !req.body.department) {
         return res.status(400).json({ msg: "Department is required" });
       }
       const user = await UserCollection.findOne({
-        username,
+        $or: [{ email: email }, { username: username }],
       });
       if (user) {
-        if (user.email === email) {
-          return res.status(401).json({ msg: "Email already in use" });
-        } else {
-          return res.status(401).json({ msg: "Username already in use" });
-        }
+        return res
+          .status(400)
+          .json({ msg: "Either email or username is already in use" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      let newUser ={
+      let newUser = {
         email,
         username,
         password: hashedPassword,
         role,
-      }
-      if(role == 'departmentUser' ){
+      };
+      if (role == "departmentUser") {
         newUser.department = req.body.department;
       }
-       await UserCollection.create(newUser);
+      await UserCollection.create(newUser);
       return res.status(201).json({ msg: "User registered successfully" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -47,14 +47,11 @@ const authCtrl = {
   signin: async (req, res) => {
     try {
       const { emailOrUsername, password } = req.body;
-      if(!emailOrUsername || !password){
-        return res.status(400).json({msg: "Please fill all the fields"});
+      if (!emailOrUsername || !password) {
+        return res.status(400).json({ msg: "Please fill all the fields" });
       }
       const user = await UserCollection.findOne({
-        $or: [
-          { email:emailOrUsername },
-          { username: emailOrUsername },
-        ],
+        $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
       });
       if (!user) {
         return res
@@ -62,10 +59,7 @@ const authCtrl = {
           .json({ msg: "Invalid Credential, please try again." });
       }
 
-      const isCorrectPassword = await bcrypt.compare(
-        password,
-        user.password
-      );
+      const isCorrectPassword = await bcrypt.compare(password, user.password);
       if (!isCorrectPassword)
         return res
           .status(404)
@@ -92,7 +86,7 @@ const authCtrl = {
       const refreshToken = req.cookies.userRefreshToken;
       if (!refreshToken)
         return res.status(400).json({ msg: "Please login first." });
-      
+
       jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
@@ -101,7 +95,7 @@ const authCtrl = {
             return res.status(401).json({ msg: "Please login first." });
           } else {
             const accessToken = createAcessToken({ id: user.id });
-            
+
             return res.json({ accessToken });
           }
         }

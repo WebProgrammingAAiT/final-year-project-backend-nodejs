@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
+import authRoute from './routes/authRoute.js';
 
 // *Useful for getting environment vairables
 dotenv.config();
@@ -16,6 +16,8 @@ app.use(cors({ credentials: true,  }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => res.json("Online"));
+
+app.use('/api',authRoute);
 
 //db connection
 mongoose

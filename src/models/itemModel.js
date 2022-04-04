@@ -2,13 +2,17 @@ import mongoose from "mongoose";
 
 const itemSchema = mongoose.Schema(
   {
-    itemTypeId: {
+    itemType: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Item_Type",
     },
-    subinventoryId: {
+    subinventory: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Subinventory",
+    },
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department",
     }
   },
   { timestamps: true }

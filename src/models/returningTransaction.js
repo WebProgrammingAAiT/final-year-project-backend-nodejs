@@ -6,12 +6,12 @@ const returningTransactionSchema = mongoose.Schema(
       type: String,
     },
     department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
-    item:{type: mongoose.Schema.Types.ObjectId, ref: "Item" },
+    item: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
     status: {
-        type: String,
-        enum: ["pending", "approved"],
-        default: "pending",
-      },
+      type: String,
+      enum: ["pending", "approved"],
+      default: "pending",
+    },
   },
   { timestamps: true }
 );

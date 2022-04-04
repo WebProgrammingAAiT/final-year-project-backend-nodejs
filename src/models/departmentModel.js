@@ -7,7 +7,18 @@ const departmentSchema = mongoose.Schema(
       required: true,
       unique: true,
     },
-    
+    items: [
+      {
+        item: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Item",
+        },
+        itemType:{
+          type: mongoose.Schema.Types.ObjectId, ref: "Item_Type" ,
+          ref:'Item_Type',
+        }
+      },
+    ],
   },
   { timestamps: true }
 );

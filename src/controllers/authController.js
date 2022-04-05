@@ -1,4 +1,5 @@
 import UserCollection from "../models/userModel.js";
+import DepartmentUserCollection from "../models/departmentUserModel.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -36,8 +37,10 @@ const authCtrl = {
       };
       if (role == "departmentUser") {
         newUser.department = req.body.department;
+        await DepartmentUserCollection.create(newUser);
+      } else {
+        await UserCollection.create(newUser);
       }
-      await UserCollection.create(newUser);
       return res.status(201).json({ msg: "User registered successfully" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -115,25 +118,29 @@ const authCtrl = {
   },
 
   changePassword: async (req, res) => {
-    const { emailOrUsername, newPassword } = req.body;
-    if (!emailOrUsername || !newPassword) return res.sendStatus(400);
-    if (newPassword.length < 6)
-      return res
-        .status(400)
-        .json({ msg: "Password must be at least 6 characters long" });
+    try {
+      const { emailOrUsername, newPassword } = req.body;
+      if (!emailOrUsername || !newPassword) return res.sendStatus(400);
+      if (newPassword.length < 6)
+        return res
+          .status(400)
+          .json({ msg: "Password must be at least 6 characters long" });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const result = await UserCollection.findOneAndUpdate(
-      {
-        $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
-      },
-      { password: hashedPassword }
-    );
+      const result = await UserCollection.findOneAndUpdate(
+        {
+          $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+        },
+        { password: hashedPassword }
+      );
 
-    if (!result) return res.status(404).json({ msg: "User not found" });
+      if (!result) return res.status(404).json({ msg: "User not found" });
 
-    return res.json({ msg: "Password changed successfully" });
+      return res.json({ msg: "Password changed successfully" });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
   },
 };
 

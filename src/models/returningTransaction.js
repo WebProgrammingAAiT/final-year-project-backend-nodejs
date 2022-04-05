@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
+import TransactionCollection from "./transactionModel.js";
 
 const returningTransactionSchema = mongoose.Schema(
   {
-    transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     returnerName: {
       type: String,
     },
@@ -14,10 +14,10 @@ const returningTransactionSchema = mongoose.Schema(
       default: "pending",
     },
   },
-  { timestamps: true }
+  { discriminatorKey: "type" }
 );
 
-export default mongoose.model(
+export default TransactionCollection.discriminator(
   "Returning_Transaction",
   returningTransactionSchema
 );

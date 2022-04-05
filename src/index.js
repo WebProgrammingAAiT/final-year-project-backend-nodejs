@@ -6,6 +6,7 @@ import cors from "cors";
 import authRoute from './routes/authRoute.js';
 import departmentRoute from './routes/departmentRoute.js';
 import userRoute from './routes/userRoute.js';
+import transactionRoute from './routes/transactionRoute.js';
 
 // *Useful for getting environment vairables
 dotenv.config();
@@ -22,6 +23,7 @@ app.get("/", (req, res) => res.json("Online"));
 app.use('/api',authRoute);
 app.use('/api',departmentRoute);
 app.use('/api',userRoute);
+app.use('/api',transactionRoute);
 
 //db connection
 mongoose

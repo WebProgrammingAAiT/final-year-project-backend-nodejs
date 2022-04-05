@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
+import TransactionCollection from './transactionModel.js'
 
 const receivingTransactionSchema = mongoose.Schema(
   {
-    transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     source: {
       type: String,
     },
@@ -20,7 +20,7 @@ const receivingTransactionSchema = mongoose.Schema(
 
 
   },
-  { timestamps: true }
+  { discriminatorKey: 'type' }
 );
 
-export default mongoose.model("Receiving_Transaction", receivingTransactionSchema);
+export default TransactionCollection.discriminator('Receiving_Transaction', receivingTransactionSchema);

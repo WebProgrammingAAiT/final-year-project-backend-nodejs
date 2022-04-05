@@ -1,10 +1,11 @@
-import UserCollection from "../models/userModel.js";
+import DepartmentUserCollection from "../models/departmentUserModel.js";
 
 const userCtrl = {
     changeDepartment: async(req, res) => {
-        const { emailOrUsername, departmentId } = req.body;
+        try {
+            const { emailOrUsername, departmentId } = req.body;
         if (!emailOrUsername || !departmentId) return res.sendStatus(400);
-        const user = await UserCollection.findOne({
+        const user = await DepartmentUserCollection.findOne({
             $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
         });
 
@@ -15,6 +16,10 @@ const userCtrl = {
         user.department = departmentId;
         await user.save();
         return res.status(200).json({ msg: "Department changed successfully" });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+        
 
     }
 

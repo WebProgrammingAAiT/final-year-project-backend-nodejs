@@ -12,6 +12,7 @@ router.post('/login',signinValidator,isRequestValidated,authCtrl.signin)
 
 //admin changing another user's password
 router.put('/account/changePassword', hasValidToken,isAdmin, authCtrl.changePassword)
+
 router.post('/user/refreshToken',authCtrl.getUserAccessToken)
 router.post('/user/logout', authCtrl.logout)
 

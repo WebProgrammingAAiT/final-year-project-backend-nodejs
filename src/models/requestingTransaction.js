@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const requestingTransactionSchema = mongoose.Schema(
   {
+    transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
     requestorName: {
       type: String,
     },

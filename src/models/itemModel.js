@@ -6,16 +6,8 @@ const itemSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Item_Type",
     },
-    subinventory: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subinventory",
-    },
-    department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Department",
-    }
   },
-  { timestamps: true }
+  { timestamps: true,discriminatorKey: "type"  }
 );
 
 export default mongoose.model("Item", itemSchema);

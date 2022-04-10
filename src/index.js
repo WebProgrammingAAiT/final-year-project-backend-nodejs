@@ -7,6 +7,8 @@ import authRoute from './routes/authRoute.js';
 import departmentRoute from './routes/departmentRoute.js';
 import userRoute from './routes/userRoute.js';
 import transactionRoute from './routes/transactionRoute.js';
+import subinventoryRoute from './routes/subinventoryRoute.js';
+import itemTypeRoute from './routes/itemTypeRoute.js';
 
 // *Useful for getting environment variables
 dotenv.config();
@@ -24,6 +26,8 @@ app.use('/api',authRoute);
 app.use('/api',departmentRoute);
 app.use('/api',userRoute);
 app.use('/api',transactionRoute);
+app.use('/api',subinventoryRoute);
+app.use('/api',itemTypeRoute);
 
 //db connection
 mongoose

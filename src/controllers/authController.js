@@ -77,7 +77,7 @@ const authCtrl = {
         path: "/api/user/refreshToken",
         maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days
       });
-      const accessToken = createAcessToken({ id: user._id, role: user.role });
+      const accessToken = createAccessToken({ id: user._id, role: user.role });
       return res.json({ msg: "Login Successful.", accessToken });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -97,7 +97,7 @@ const authCtrl = {
           if (err) {
             return res.status(401).json({ msg: "Please login first." });
           } else {
-            const accessToken = createAcessToken({ id: user.id });
+            const accessToken = createAccessToken({ id: user.id });
 
             return res.json({ accessToken });
           }
@@ -144,7 +144,7 @@ const authCtrl = {
   },
 };
 
-const createAcessToken = (user) => {
+const createAccessToken = (user) => {
   return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
 };
 

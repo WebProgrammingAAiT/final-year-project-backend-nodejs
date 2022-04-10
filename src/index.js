@@ -8,7 +8,7 @@ import departmentRoute from './routes/departmentRoute.js';
 import userRoute from './routes/userRoute.js';
 import transactionRoute from './routes/transactionRoute.js';
 
-// *Useful for getting environment vairables
+// *Useful for getting environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 8080;

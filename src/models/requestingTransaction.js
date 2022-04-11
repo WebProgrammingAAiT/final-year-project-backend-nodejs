@@ -3,9 +3,6 @@ import TransactionCollection from './transactionModel.js'
 
 const requestingTransactionSchema = mongoose.Schema(
   {
-    requestorName: {
-      type: String,
-    },
     department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
     requiredDate: Date,
     requestedItems: [
@@ -15,6 +12,12 @@ const requestingTransactionSchema = mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        items: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Item",
+          },
+        ],
         quantity: {
           type: Number,
           default: 1,

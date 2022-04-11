@@ -3,9 +3,7 @@ import TransactionCollection from "./transactionModel.js";
 
 const returningTransactionSchema = mongoose.Schema(
   {
-    returnerName: {
-      type: String,
-    },
+    
     department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
     item: { type: mongoose.Schema.Types.ObjectId, ref: "Item" },
     status: {

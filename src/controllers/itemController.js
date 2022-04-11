@@ -11,7 +11,10 @@ const alphabet = "0123456789-";
 const nanoid = customAlphabet(alphabet, 21);
 
 const itemCtrl = {
-    addItemToSubinventoryNonPO: async (req, res) => {
+  addItemToSubinventoryNonPO: async (req, res) => {
+      // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
+      const sess = await mongoose.startSession();
+      sess.startTransaction();
     try {
       // itemsToBeAdded is a list of objects, with each object having {itemTypeId,subinventoryId,quantity,unitCost}
       // user and source will be be a single value for all items to be added
@@ -20,9 +23,7 @@ const itemCtrl = {
         return res.sendStatus(400);
       }
       let mapOfItemTypeToItem = {};
-      // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
-      const sess = await mongoose.startSession();
-      sess.startTransaction();
+      
       // iterating through each item found in items to be added
       // and checking if the itemType and subinventory id exists
       for (let i = 0; i < itemsToBeAdded.length; i++) {
@@ -49,8 +50,8 @@ const itemCtrl = {
           return res
             .status(404)
             .json({ msg: "No subinventory found with the specified id." });
-        
-        // adding to our map with key itemTypeId and value {quantity,unitCost, subinventoryId}    
+
+        // adding to our map with key itemTypeId and value {quantity,unitCost, subinventoryId}
         mapOfItemTypeToItem[itemTypeId] = {
           quantity,
           unitCost,
@@ -58,18 +59,18 @@ const itemCtrl = {
         };
         // checking if array named items is found in the map with the key itemTypeId
         // if not instantiate an empty one for the current itemTypeId
-        if(!mapOfItemTypeToItem[itemTypeId].items){
-            mapOfItemTypeToItem[itemTypeId].items = [];
+        if (!mapOfItemTypeToItem[itemTypeId].items) {
+          mapOfItemTypeToItem[itemTypeId].items = [];
         }
         // iterating through the quantity of the given item type
         // and adding it to the db, then pushing the id to the items array
         for (let j = 1; j <= quantity; j++) {
-            const item = new SubinventoryItemCollection({
-                    itemType: itemTypeId,
-                    subinventory: subinventoryId,
-                  })
-           const result= await item.save({session:sess})      
-                  
+          const item = new SubinventoryItemCollection({
+            itemType: itemTypeId,
+            subinventory: subinventoryId,
+          });
+          const result = await item.save({ session: sess });
+
           mapOfItemTypeToItem[itemTypeId].items.push(result._id);
         }
       }
@@ -85,19 +86,28 @@ const itemCtrl = {
         })
       );
 
-      
-      await ReceivingTransactionCollection.create([{
-        receiptNumber: nanoid(),
-        user,
-        source,
-        receivedItems: arrayOfReceivedItems,
-      }], { session: sess });
-      
+      await ReceivingTransactionCollection.create(
+        [
+          {
+            receiptNumber: nanoid(),
+            user,
+            source,
+            receivedItems: arrayOfReceivedItems,
+          },
+        ],
+        { session: sess }
+      );
+
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await sess.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });
     } catch (err) {
+      // Rollback any changes made in the database
+      await sess.abortTransaction();
       return res.status(500).json({ msg: err.message });
+    } finally {
+      // Ending the session
+      sess.endSession();
     }
   },
   getSubinventoryItems: async (req, res) => {

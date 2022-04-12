@@ -51,30 +51,24 @@ const transferringTransactionCtrl = {
           .json({ msg: "No itemType found with the specified id." });
 
       //checking first if the quantity specified is in the db first
-      const itemsInSubinventory =
-        await SubinventoryItemCollection.countDocuments(
-          {
-            itemType: itemTypeId,
-          },
-          { session: session }
-        ).exec();
+      const itemsInSubinventory = await SubinventoryItemCollection.find({
+        itemType: itemTypeId,
+      }).session(session).limit(quantity);
+      
 
-      if (itemsInSubinventory < quantity) {
-        const itemType = await ItemTypeCollection.findById(itemTypeId);
-        return res.status(400).json({
-          msg:
-            "Not enough items in subinventory for item type " + itemType.name,
-        });
+      if (itemsInSubinventory.length < quantity) {
+        return res
+          .status(400)
+          .json({ msg: "Not enough items in subinventory for item type" });
       }
+      
 
       let itemsToBeTransferred = [];
       // iterating through the quantity of the given item type
       // and changing it's type to department item, and setting department id, then pushing the id to the itemsToBeTransferred array
-      for (let j = 1; j <= quantity; j++) {
-        const item = await SubinventoryItemCollection.findOne({
-          itemType: itemTypeId,
-        }).session(session);
-
+      for (let j = 0; j < quantity; j++) {
+        const item = itemsInSubinventory[j]
+        
         await ItemCollection.replaceOne(
           { _id: item._id },
           {
@@ -88,6 +82,7 @@ const transferringTransactionCtrl = {
         itemsToBeTransferred.push(item._id);
       }
 
+      // updating the requestingTransaction with the given itemType to approved
       requestingTransaction.requestedItems =
         requestingTransaction.requestedItems.map((item) => {
           if (item.itemType == itemTypeId) {

@@ -78,6 +78,8 @@ const departmentCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+
+  
 };
 
 export default departmentCtrl;

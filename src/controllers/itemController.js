@@ -5,7 +5,7 @@ import ItemCollection from "../models/itemModel.js";
 import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import DepartmentItemCollection from "../models/departmentItemModel.js";
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
-import RequestingTransactionCollection from "../models/requestingTransaction.js";
+import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
 import { customAlphabet } from "nanoid";
 
 const alphabet = "0123456789-";
@@ -14,8 +14,8 @@ const nanoid = customAlphabet(alphabet, 21);
 const itemCtrl = {
   addItemToSubinventoryNonPO: async (req, res) => {
     // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
-    const sess = await mongoose.startSession();
-    sess.startTransaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
       // itemsToBeAdded is a list of objects, with each object having {itemTypeId,subinventoryId,quantity,unitCost}
       // user and source will be be a single value for all items to be added
@@ -70,7 +70,7 @@ const itemCtrl = {
             itemType: itemTypeId,
             subinventory: subinventoryId,
           });
-          const result = await item.save({ session: sess });
+          const result = await item.save({ session: session });
 
           mapOfItemTypeToItem[itemTypeId].items.push(result._id);
         }
@@ -96,19 +96,19 @@ const itemCtrl = {
             receivedItems: arrayOfReceivedItems,
           },
         ],
-        { session: sess }
+        { session: session }
       );
 
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
-      await sess.commitTransaction();
+      await session.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });
     } catch (err) {
       // Rollback any changes made in the database
-      await sess.abortTransaction();
+      await session.abortTransaction();
       return res.status(500).json({ msg: err.message });
     } finally {
       // Ending the session
-      sess.endSession();
+      session.endSession();
     }
   },
   getSubinventoryItems: async (req, res) => {
@@ -194,8 +194,8 @@ const itemCtrl = {
           const item = await SubinventoryItemCollection.findOne({
             itemType: itemTypeId,
           }).session(session);
-          
-           await ItemCollection.replaceOne(
+
+          await ItemCollection.replaceOne(
             { _id: item._id },
             {
               itemType: itemTypeId,
@@ -238,7 +238,7 @@ const itemCtrl = {
         .json({ msg: "Item(s) added to department successfully" });
     } catch (err) {
       // Rollback any changes made in the database
-      await sess.abortTransaction();
+      await session.abortTransaction();
       return res.status(500).json({ msg: err.message });
     } finally {
       // Ending the session
@@ -267,8 +267,6 @@ const itemCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-
- 
 
   updateItem: async (req, res) => {
     try {
@@ -311,6 +309,33 @@ const itemCtrl = {
       });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  //TODO: remove
+  testItem: async (req, res) => {
+    const { itemTypeId, quantity, department } = req.body;
+    const items = await ItemCollection.find({
+      type: "Subinventory_Item",
+      itemType: itemTypeId,
+    }).limit(quantity);
+    if (items.length < quantity) {
+      return res
+        .status(400)
+        .json({ msg: "Not enough items in subinventory for item type" });
+    }
+    console.log(items[0]);
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      await ItemCollection.replaceOne(
+        { _id: item._id },
+        {
+          itemType: itemTypeId,
+          department,
+          type: "Department_Item",
+          createdAt: item.createdAt,
+        },
+      )
     }
   },
 };

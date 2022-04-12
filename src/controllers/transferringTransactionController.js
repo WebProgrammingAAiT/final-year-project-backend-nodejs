@@ -1,0 +1,133 @@
+import mongoose from "mongoose";
+import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import TransferringTransactionCollection from "../models/transferringTransactionModel.js";
+import ItemCollection from "../models/itemModel.js";
+import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
+import ItemTypeCollection from "../models/itemTypeModel.js";
+import { customAlphabet } from "nanoid";
+
+const alphabet = "0123456789-";
+const nanoid = customAlphabet(alphabet, 21);
+
+const transferringTransactionCtrl = {
+  transferItems: async (req, res) => {
+    // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const {
+        requestingTransactionId,
+        itemTypeId,
+        quantity,
+        user,
+        department,
+      } = req.body;
+      if (
+        !requestingTransactionId ||
+        !itemTypeId ||
+        !quantity ||
+        !user ||
+        !department
+      ) {
+        return res.sendStatus(400);
+      }
+
+      if (typeof quantity != "number") {
+        return res.status(400).json({ msg: "Quantity Input must be a number" });
+      }
+
+      const requestingTransaction =
+        await RequestingTransactionCollection.findById(requestingTransactionId);
+      if (!requestingTransaction)
+        return res.status(404).json({
+          msg: "No requesting transaction found with the specified id.",
+        });
+
+      //checking if the itemType exists
+      const itemType = await ItemTypeCollection.findById(itemTypeId);
+      if (!itemType)
+        return res
+          .status(404)
+          .json({ msg: "No itemType found with the specified id." });
+
+      //checking first if the quantity specified is in the db first
+      const itemsInSubinventory =
+        await SubinventoryItemCollection.countDocuments(
+          {
+            itemType: itemTypeId,
+          },
+          { session: session }
+        ).exec();
+
+      if (itemsInSubinventory < quantity) {
+        const itemType = await ItemTypeCollection.findById(itemTypeId);
+        return res.status(400).json({
+          msg:
+            "Not enough items in subinventory for item type " + itemType.name,
+        });
+      }
+
+      let itemsToBeTransferred = [];
+      // iterating through the quantity of the given item type
+      // and changing it's type to department item, and setting department id, then pushing the id to the itemsToBeTransferred array
+      for (let j = 1; j <= quantity; j++) {
+        const item = await SubinventoryItemCollection.findOne({
+          itemType: itemTypeId,
+        }).session(session);
+
+        await ItemCollection.replaceOne(
+          { _id: item._id },
+          {
+            itemType: itemTypeId,
+            department,
+            type: "Department_Item",
+            createdAt: item.createdAt,
+          },
+          { session: session }
+        );
+        itemsToBeTransferred.push(item._id);
+      }
+
+      requestingTransaction.requestedItems =
+        requestingTransaction.requestedItems.map((item) => {
+          if (item.itemType == itemTypeId) {
+            return { ...item, status: "approved" };
+          }
+          return item;
+        });
+      await requestingTransaction.save({ session: session });
+
+      await TransferringTransactionCollection.create(
+        [
+          {
+            receiptNumber: nanoid(),
+            user,
+            department,
+            requestingTransaction: requestingTransactionId,
+            transferredItems: {
+              itemType: itemTypeId,
+              items: itemsToBeTransferred,
+              quantity,
+            },
+          },
+        ],
+        { session: session }
+      );
+
+      // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
+      await session.commitTransaction();
+      return res
+        .status(200)
+        .json({ msg: "Item(s) added to department successfully" });
+    } catch (err) {
+      // Rollback any changes made in the database
+      await session.abortTransaction();
+      return res.status(500).json({ msg: err.message });
+    } finally {
+      // Ending the session
+      session.endSession();
+    }
+  },
+};
+
+export default transferringTransactionCtrl;

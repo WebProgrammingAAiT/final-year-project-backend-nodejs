@@ -1,6 +1,6 @@
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
-import RequestingTransactionCollection from "../models/requestingTransaction.js";
-import ReturningTransactionCollection from "../models/returningTransaction.js";
+import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import ReturningTransactionCollection from "../models/returningTransactionModel.js";
 import TransactionCollection from "../models/transactionModel.js";
 import { customAlphabet } from "nanoid";
 

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import TransactionCollection from './transactionModel.js'
+import TransactionCollection from "./transactionModel.js";
 
 const requestingTransactionSchema = mongoose.Schema(
   {
@@ -9,15 +9,9 @@ const requestingTransactionSchema = mongoose.Schema(
       {
         itemType: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
+          ref: "Item_Type",
           required: true,
         },
-        items: [
-          {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Item",
-          },
-        ],
         quantity: {
           type: Number,
           default: 1,
@@ -30,8 +24,7 @@ const requestingTransactionSchema = mongoose.Schema(
       },
     ],
   },
-  { discriminatorKey: 'type' }
-
+  { discriminatorKey: "type" }
 );
 
 export default TransactionCollection.discriminator(

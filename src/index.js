@@ -12,6 +12,7 @@ import itemTypeRoute from './routes/itemTypeRoute.js';
 import itemRoute from './routes/itemRoute.js';
 import transferringTransactionRoute from './routes/transferringTransactionRoute.js';
 import requestingTransactionRoute from './routes/requestingTransactionRoute.js';
+import receivingTransactionRoute from './routes/receivingTransactionRoute.js';
 
 // *Useful for getting environment variables
 dotenv.config();
@@ -32,8 +33,9 @@ app.use('/api',userRoute);
 app.use('/api',subinventoryRoute);
 app.use('/api',itemTypeRoute);
 app.use('/api',itemRoute);
-app.use('/api',transferringTransactionRoute);
+app.use('/api',receivingTransactionRoute);
 app.use('/api',requestingTransactionRoute);
+app.use('/api',transferringTransactionRoute);
 
 //db connection
 mongoose

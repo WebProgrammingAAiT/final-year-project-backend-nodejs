@@ -4,7 +4,7 @@ import { hasValidToken, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-//TODO: add property admin user check
+//TODO: add department user check
 router.post("/transactions/requesting", requestingTransactionCtrl.requestItems);
 
 export default router;

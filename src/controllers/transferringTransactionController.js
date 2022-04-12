@@ -73,6 +73,7 @@ const transferringTransactionCtrl = {
           { _id: item._id },
           {
             itemType: itemTypeId,
+            price:item.price,
             department,
             type: "Department_Item",
             createdAt: item.createdAt,

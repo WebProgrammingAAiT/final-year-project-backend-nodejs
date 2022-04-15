@@ -50,7 +50,7 @@ const transferringTransactionCtrl = {
           .status(404)
           .json({ msg: "No itemType found with the specified id." });
 
-      //checking first if the quantity specified is in the db first
+      //checking first if the quantity specified is available in the db first
       const itemsInSubinventory = await SubinventoryItemCollection.find({
         itemType: itemTypeId,
       }).session(session).limit(quantity);

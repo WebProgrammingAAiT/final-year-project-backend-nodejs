@@ -150,25 +150,17 @@ const returningTransactionCtrl = {
             .status(404)
             .json({ msg: "No subinventory found with the specified id." });
 
+        // checking if array is there in the map with the key itemTypeId
+        // if not instantiate an empty one for the current itemTypeId
         if (!mapOfItemTypeToItem[itemTypeId]) {
           mapOfItemTypeToItem[itemTypeId] = [];
         }
+        // adding to our map with key itemTypeId and value {unitCost, subinventoryId,itemId}
         mapOfItemTypeToItem[itemTypeId].push({
           itemId: itemId,
           subinventoryId: subinventoryId,
           unitCost: itemFromDb.price,
         });
-        // adding to our map with key itemTypeId and value {unitCost, subinventoryId}
-        // mapOfItemTypeToItem[itemTypeId] = [...mapOfItemTypeToItem[itemTypeId],{
-        //   unitCost: itemFromDb.price,
-        //   subinventoryId,
-        // }];
-        // checking if array named items is found in the map with the key itemTypeId
-        // if not instantiate an empty one for the current itemTypeId
-        // if (!mapOfItemTypeToItem[itemTypeId].items) {
-        //   mapOfItemTypeToItem[itemTypeId].items = [];
-        // }
-        // mapOfItemTypeToItem[itemTypeId].items.push(itemId);
         // changing the department item to be a subinventory item
         await ItemCollection.replaceOne(
           { _id: itemFromDb._id },
@@ -178,7 +170,7 @@ const returningTransactionCtrl = {
             department,
             type: "Subinventory_Item",
             subinventory: subinventoryId,
-            createdAt: item.createdAt,
+            createdAt: itemFromDb.createdAt,
           },
           { session: session }
         );
@@ -192,9 +184,25 @@ const returningTransactionCtrl = {
           });
         await returningTransaction.save({ session: session });
       }
-      console.log(mapOfItemTypeToItem);
+      // checking if items with same itemType but different subinventory exist
+      for (let m in mapOfItemTypeToItem) {
+        let previousItemTypeSubinventory = "";
+        for (let k = 0; k < mapOfItemTypeToItem[m].length; k++) {
+          let subinventoryId = mapOfItemTypeToItem[m][k].subinventoryId;
+          if (
+            previousItemTypeSubinventory !== "" &&
+            previousItemTypeSubinventory !== subinventoryId
+          ) {
+            return res.status(400).json({
+              msg: "Two different subinventories are not allowed for the same item type",
+            });
+          }
+          previousItemTypeSubinventory = subinventoryId;
+        }
+      }
       // useful for setting the receiving transaction data
       let arrayOfReceivedItems = [];
+      // iterating through each itemType found in mapOfItemTypeToItem
       Object.keys(mapOfItemTypeToItem).map((key) => {
         let items = mapOfItemTypeToItem[key].map((item) => item.itemId);
         let averageUnitCost =
@@ -208,24 +216,7 @@ const returningTransactionCtrl = {
           items,
           unitCost: averageUnitCost,
         });
-        // mapOfItemTypeToItem[key].map((item) => {
-        //   arrayOfReceivedItems.push({
-        //     itemType: key,
-        //     quantity: mapOfItemTypeToItem[key].length,
-        //     subinventory: item.subinventoryId,
-        //     unitCost: item.unitCost,
-        //     items:[ mapOfItemTypeToItem[key]],
-        //   });
-        // });
-        //   arrayOfReceivedItems.push({
-        //       itemType: key,
-        //       quantity: mapOfItemTypeToItem[key].items.length,
-        //       unitCost: mapOfItemTypeToItem[key].unitCost,
-        //       subinventory: mapOfItemTypeToItem[key].subinventoryId,
-        //       items: mapOfItemTypeToItem[key].items,
-        //     })
       });
-      console.log(arrayOfReceivedItems);
 
       await ReceivingTransactionCollection.create(
         [
@@ -241,7 +232,7 @@ const returningTransactionCtrl = {
 
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
-      return res.status(201).json({ msg: "Item(s) returned successfully" });
+      return res.status(200).json({ msg: "Item(s) returned successfully" });
     } catch (err) {
       // Rollback any changes made in the database
       await session.abortTransaction();

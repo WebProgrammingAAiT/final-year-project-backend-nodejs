@@ -44,6 +44,43 @@ describe("User API",() =>{
         expect(response.body).to.be.a("object");
         expect(response.body).to.have.property("msg").eql('User registered successfully');
       });
+      it("It should update user", async () => {
+        let response = await chai
+          .request(app)
+          .put('/api/account/changePassword')
+          .send({
+            emailOrUsername: "mahi",
+            newPassword: "123456",
+          }).set('Authorization', 'JWT ' + tokens);
+        expect(response).to.have.status(200);
+        expect(response.body).to.be.a("object");
+        expect(response.body).to.have.property("msg").eql('Password changed successfully');
+      });
+    it("It should update user's password", async () => {
+        let response = await chai
+          .request(app)
+          .put('/api/account/changePassword')
+          .send({
+            emailOrUsername: "mahi",
+            newPassword: "123456",
+          }).set('Authorization', 'JWT ' + tokens);
+        expect(response).to.have.status(200);
+        expect(response.body).to.be.a("object");
+        expect(response.body).to.have.property("msg").eql('Password changed successfully');
+      });
+    it("It should update user's department", async () => {
+        let response = await chai
+          .request(app)
+          .put('/api/user/changeDepartment')
+          .send({
+            emailOrUsername: "neba",
+            departmentId:"624c33a58a6223667774a9f8"
+          }).set('Authorization', 'JWT ' + tokens);
+        expect(response).to.have.status(200);
+        expect(response.body).to.be.a("object");
+        expect(response.body).to.have.property("msg").eql('Department changed successfully');
+      });
+    
     it("It should logout user", async () => {
         let response = await chai
           .request(app)

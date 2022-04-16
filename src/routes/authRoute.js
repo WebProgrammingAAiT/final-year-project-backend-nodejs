@@ -10,8 +10,7 @@ const router = express.Router();
 router.post('/signup',hasValidToken,isAdmin, signupValidator,isRequestValidated,authCtrl.signup)
 router.post('/login',signinValidator,isRequestValidated,authCtrl.signin)
 
-//admin changing another user's password
-router.put('/account/changePassword', hasValidToken,isAdmin, authCtrl.changePassword)
+// /account/changePassword for own user changing password
 
 router.post('/user/refreshToken',authCtrl.getUserAccessToken)
 router.post('/user/logout', authCtrl.logout)

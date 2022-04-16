@@ -117,31 +117,7 @@ const authCtrl = {
     }
   },
 
-  changePassword: async (req, res) => {
-    try {
-      const { emailOrUsername, newPassword } = req.body;
-      if (!emailOrUsername || !newPassword) return res.sendStatus(400);
-      if (newPassword.length < 6)
-        return res
-          .status(400)
-          .json({ msg: "Password must be at least 6 characters long" });
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      const result = await UserCollection.findOneAndUpdate(
-        {
-          $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
-        },
-        { password: hashedPassword }
-      );
-
-      if (!result) return res.status(404).json({ msg: "User not found" });
-
-      return res.json({ msg: "Password changed successfully" });
-    } catch (err) {
-      return res.status(500).json({ msg: err.message });
-    }
-  },
+  
 };
 
 const createAccessToken = (user) => {

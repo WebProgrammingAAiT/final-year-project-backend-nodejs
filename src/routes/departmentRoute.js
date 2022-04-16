@@ -25,6 +25,7 @@ router.delete(
   departmentCtrl.deleteDepartment
 );
 
+router.get("/departments/:id/items", departmentCtrl.getDepartmentItems);
 router.get(
   "/departments/:id/requestingTransactions",
   departmentCtrl.getDepartmentMaterialRequests

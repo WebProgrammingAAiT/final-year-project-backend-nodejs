@@ -1,4 +1,5 @@
 import DepartmentCollection from "../models/departmentModel.js";
+import DepartmentItemCollection from "../models/departmentItemModel.js";
 import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
 import ReturningTransactionCollection from "../models/returningTransactionModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
@@ -144,6 +145,17 @@ const departmentCtrl = {
         select: "name itemCode",
       });
       return res.status(200).json({ pendingReturningTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getDepartmentItems: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const departmentItems = await DepartmentItemCollection.find({
+        department: id,
+      }).populate("itemType", "itemCode name");
+      return res.status(200).json({ departmentItems });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

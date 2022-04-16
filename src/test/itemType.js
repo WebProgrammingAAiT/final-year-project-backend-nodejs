@@ -70,4 +70,22 @@ describe('Item type APIs', () => {
       });
   });
   
+  describe('/DELETE/:id item type', () => {
+    it('it should DELETE a item type given the id', () => {
+      let itemType = new Item_Type({ 
+        name: `random`,
+        itemCode: "0003",
+      });
+      itemType.save(async(err, itemType) => {
+      let res = await chai.request(app).delete('/api/itemTypes/' + itemType._id)
+      .set('Authorization', 'JWT ' + process.env.ADMIN_TOKEN);
+    
+      expect(res).to.have.status(200);
+      expect(res.body).to.be.an("object");
+      expect(res.body).to.have.property("msg").eql('ItemType deleted successfully');
+      
+      });
+      
+    });
+});
 });

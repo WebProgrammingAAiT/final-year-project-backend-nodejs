@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import DepartmentCollection from "../models/departmentModel.js";
 import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import { customAlphabet } from "nanoid";
@@ -89,9 +90,7 @@ const requestingTransactionCtrl = {
 
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
-      return res
-        .status(200)
-        .json({ msg: "Item(s) requested successfully" });
+      return res.status(200).json({ msg: "Item(s) requested successfully" });
     } catch (err) {
       // Rollback any changes made in the database
       await session.abortTransaction();
@@ -99,6 +98,92 @@ const requestingTransactionCtrl = {
     } finally {
       // Ending the session
       session.endSession();
+    }
+  },
+  getPendingRequestingTransactions: async (req, res) => {
+    try {
+      const pendingRequestingTransactions =
+        await RequestingTransactionCollection.aggregate([
+          {
+            $match: {
+              requestedItems: {
+                $elemMatch: {
+                  status: "pending",
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              department: 1,
+              requiredDate: 1,
+              requestedItems: {
+                $filter: {
+                  input: "$requestedItems",
+                  as: "requestedItems",
+                  cond: {
+                    $eq: ["$$requestedItems.status", "pending"],
+                  },
+                },
+              },
+            },
+          },
+        ]);
+      await ItemTypeCollection.populate(pendingRequestingTransactions, {
+        path: "requestedItems.itemType",
+        select: "name itemCode",
+      });
+      await DepartmentCollection.populate(pendingRequestingTransactions, {
+        path: "department",
+        select: "name",
+      });
+      return res.status(200).json({ pendingRequestingTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getApprovedRequestingTransactions: async (req, res) => {
+    try {
+      const approvedRequestingTransactions =
+        await RequestingTransactionCollection.aggregate([
+          {
+            $match: {
+              requestedItems: {
+                $elemMatch: {
+                  status: "approved",
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              department: 1,
+              requiredDate: 1,
+              requestedItems: {
+                $filter: {
+                  input: "$requestedItems",
+                  as: "requestedItems",
+                  cond: {
+                    $eq: ["$$requestedItems.status", "approved"],
+                  },
+                },
+              },
+            },
+          },
+        ]);
+      await ItemTypeCollection.populate(approvedRequestingTransactions, {
+        path: "requestedItems.itemType",
+        select: "name itemCode",
+      });
+      await DepartmentCollection.populate(approvedRequestingTransactions, {
+        path: "department",
+        select: "name",
+      });
+      return res.status(200).json({ approvedRequestingTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
     }
   },
 };

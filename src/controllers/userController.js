@@ -67,8 +67,8 @@ const userCtrl = {
   },
   changeUserPassword: async (req, res) => {
     try {
-      const {emailOrUsername } = req.params;
-      const {  newPassword } = req.body;
+      const { emailOrUsername } = req.params;
+      const { newPassword } = req.body;
       if (!emailOrUsername || !newPassword) return res.sendStatus(400);
       if (newPassword.length < 6)
         return res
@@ -91,7 +91,7 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  getUsers: async (req, res) => {
+  searchForUsers: async (req, res) => {
     try {
       const searchTerm = req.query.searchTerm;
       let filter = {};
@@ -106,7 +106,7 @@ const userCtrl = {
       }
       let users = await UserCollection.find(filter).select("-password");
 
-      res.status(200).json({ users });
+      return res.status(200).json({ users });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

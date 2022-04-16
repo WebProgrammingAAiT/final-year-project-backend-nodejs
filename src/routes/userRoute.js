@@ -10,7 +10,7 @@ router.put(
   isAdmin,
   userCtrl.changeUserDepartment
 );
-router.get("/users", hasValidToken, isAdmin, userCtrl.getUsers);
+router.get("/users/search", hasValidToken, isAdmin, userCtrl.searchForUsers);
 router.put(
   "/users/:emailOrUsername/changeRole",
   hasValidToken,

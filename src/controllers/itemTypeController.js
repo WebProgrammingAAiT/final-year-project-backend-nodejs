@@ -7,8 +7,10 @@ const itemTypeCtrl = {
       if (!name && !itemCode) {
         return res.sendStatus(400);
       }
-      if(itemCode.length<4){
-        return res.status(400).json({msg:'Item Code must be at least 4 characters long'});
+      if (itemCode.length < 4) {
+        return res
+          .status(400)
+          .json({ msg: "Item Code must be at least 4 characters long" });
       }
 
       await ItemTypeCollection.create({
@@ -43,7 +45,24 @@ const itemTypeCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
- 
+  searchForItemCode: async (req, res) => {
+    try {
+      const searchTerm = req.query.searchTerm;
+      let filter = {};
+      // the i is for case insensitive search
+      if (searchTerm) {
+        filter = {
+          name: { $regex: searchTerm, $options: "i" },
+        };
+      }
+      let itemTypes = await ItemTypeCollection.find(filter);
+
+      return res.status(200).json({ itemTypes });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
   updateItemType: async (req, res) => {
     try {
       const { id } = req.params;
@@ -51,8 +70,10 @@ const itemTypeCtrl = {
       if (!name || !id || !itemCode) {
         return res.sendStatus(400);
       }
-      if(itemCode.length<4){
-        return res.status(400).json({msg:'Item Code must be at least 4 characters long'});
+      if (itemCode.length < 4) {
+        return res
+          .status(400)
+          .json({ msg: "Item Code must be at least 4 characters long" });
       }
       const result = await ItemTypeCollection.findByIdAndUpdate(id, {
         name,

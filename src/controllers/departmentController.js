@@ -1,4 +1,8 @@
 import DepartmentCollection from "../models/departmentModel.js";
+import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import ReturningTransactionCollection from "../models/returningTransactionModel.js";
+import ItemTypeCollection from "../models/itemTypeModel.js";
+import ItemCollection from "../models/itemModel.js";
 
 const departmentCtrl = {
   addDepartment: async (req, res) => {
@@ -79,7 +83,71 @@ const departmentCtrl = {
     }
   },
 
-  
+  getDepartmentMaterialRequests: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.sendStatus(400);
+      }
+      const requestingTransactions = await RequestingTransactionCollection.find(
+        { department: id }
+      ).populate("user", "username");
+      await ItemTypeCollection.populate(requestingTransactions, {
+        path: "requestedItems.itemType",
+        select: "name itemCode",
+      });
+      return res.status(200).json({ requestingTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getPendingDepartmentReturnMaterialTransactions: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.sendStatus(400);
+      }
+      const pendingReturningTransactions =
+        await ReturningTransactionCollection.aggregate([
+          {
+            $match: {
+              returnedItems: {
+                $elemMatch: {
+                  status: "pending",
+                },
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              department: 1,
+              returnedDate: 1,
+              returnedItems: {
+                $filter: {
+                  input: "$returnedItems",
+                  as: "returnedItems",
+                  cond: {
+                    $eq: ["$$returnedItems.status", "pending"],
+                  },
+                },
+              },
+            },
+          },
+        ]);
+      await ItemCollection.populate(pendingReturningTransactions, {
+        path: "returnedItems.item",
+        select: "itemType",
+      });
+      await ItemTypeCollection.populate(pendingReturningTransactions, {
+        path: "returnedItems.item.itemType",
+        select: "name itemCode",
+      });
+      return res.status(200).json({ pendingReturningTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 };
 
 export default departmentCtrl;

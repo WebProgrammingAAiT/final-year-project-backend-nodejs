@@ -51,4 +51,23 @@ describe('Item type APIs', () => {
 
       });
   });
+  describe('/PUT/:id item type', async() => {
+      it('it should UPDATE a item type given the id', async() => {
+        let itemType = new Item_Type({ 
+          name: `random`,
+          itemCode: "0003",
+        });
+        await itemType.save(async(err, itemType) => {
+        let res = await chai.request(app).put('/api/itemTypes/' + itemType._id).send({name:'updated table', itemCode: itemType.itemCode}).set('Authorization', 'JWT ' + process.env.ADMIN_TOKEN);
+            
+        console.log(res.body);
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.an("object");
+        expect(res.body).to.have.property("msg").eql('ItemType updated successfully');
+        
+        });
+        
+      });
+  });
+  
 });

@@ -7,19 +7,20 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WebProgrammingAAiT/final-year-project-backend-django.git"
+    "url": "git+https://github.com/WebProgrammingAAiT/final-year-project-backend-nodejs.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/WebProgrammingAAiT/final-year-project-backend-django/issues"
+    "url": "https://github.com/WebProgrammingAAiT/final-year-project-backend-nodejs/issues"
   },
-  "homepage": "https://github.com/WebProgrammingAAiT/final-year-project-backend-django#readme",
+  "homepage": "https://github.com/WebProgrammingAAiT/final-year-project-backend-nodejs#readme",
   "dependencies": {
     "bcrypt": "^5.0.1",
     "cookie-parser": "^1.4.6",
@@ -32,9 +33,15 @@
     "nanoid": "^3.3.2"
   },
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "husky": "^7.0.4",
+    "lint-staged": "^12.3.8",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.6.2"
   },
   "engines": {
     "node": "14.x"
+  },
+  "lint-staged": {
+    "*.{js,css,md}": "prettier --write"
   }
 }

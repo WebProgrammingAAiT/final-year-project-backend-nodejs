@@ -18,6 +18,32 @@ describe('Department APIs', () => {
     expect(response.body.departments).to.have.lengthOf(2);
       });
   });
+  describe('/POST department', () => {
+    let tokens;
+    
+    before(async()=>{
+        let response = await chai.request(app).post("/api/login").send(
+            {
+                "emailOrUsername": "admin",
+                "password": "itsc2022"
+            });
+        tokens = (response.body.accessToken);
+    });
+    let department;
+      it('it should POST a department ', async () => {
+          
+            department = new Department({
+              name: `${Date.now().toString()} ${Math.random()}`,
+            });
+           let response = await chai.request(app)
+            .post('/api/departments')
+            .send(department).set('Authorization', 'JWT ' + tokens);
+            
+    expect(response).to.have.status(201);
+    expect(response.body).to.be.an("object");
+    expect(response.body).to.have.property("msg").eql('Department added successfully');
+      });
+  });
   
   describe('/GET/:id department', () => {
     let tokens;

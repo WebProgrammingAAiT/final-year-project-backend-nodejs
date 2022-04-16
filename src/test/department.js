@@ -88,4 +88,30 @@ describe('Department APIs', () => {
         
       });
   });
+  describe('/DELETE/:id department', () => {
+    let tokens;
+    before(async()=>{
+        let response = await chai.request(app).post("/api/login").send(
+            {
+                "emailOrUsername": "admin",
+                "password": "itsc2022"
+            });
+        tokens = (response.body.accessToken);
+    });
+      it('it should DELETE a department given the id', () => {
+        let department = new Department({ 
+          name: `random`,
+        });
+        department.save(async(err, department) => {
+        let res = await chai.request(app).delete('/api/departments/' + department._id)
+        .set('Authorization', 'JWT ' + tokens);
+      
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.an("object");
+        expect(res.body).to.have.property("msg").eql('Department deleted successfully');
+        
+        });
+        
+      });
+  });
 });

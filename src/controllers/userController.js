@@ -22,6 +22,46 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  changeUserRole: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role, departmentId } = req.body;
+      if (!id || !role) return res.sendStatus(400);
+      if (role !== "propertyAdminUser" && role !== "departmentUser") {
+        return res
+          .status(400)
+          .json({ msg: "Role must be propertyAdminUser or departmentUser" });
+      }
+      if (role == "departmentUser" && !departmentId) {
+        return res.status(400).json({ msg: "Department Id is required" });
+      }
+      const user = await UserCollection.findById(id);
+      if (!user) return res.status(404).json({ msg: "No user found." });
+      let newUser = user.toObject();
+      let data = {};
+      if (role == "departmentUser") {
+        data = {
+          ...newUser,
+          department: departmentId,
+          type: "Department_User",
+          role,
+        };
+        delete data.updatedAt;
+      } else {
+        data = {
+          ...newUser,
+          role,
+        };
+        delete data.department;
+        delete data.type;
+        delete data.updatedAt;
+      }
+      await UserCollection.replaceOne({ _id: id }, data);
+      return res.status(200).json({ msg: "Role changed successfully" });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
   getUsers: async (req, res) => {
     try {
       const searchTerm = req.query.searchTerm;

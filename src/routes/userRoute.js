@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.put('/user/changeDepartment',hasValidToken,isAdmin,userCtrl.changeUserDepartment);
 router.get('/users',hasValidToken,isAdmin,  userCtrl.getUsers);
-
+router.put('/users/:id/changeRole',hasValidToken,isAdmin, userCtrl.changeUserRole);
 
 
 export default router;

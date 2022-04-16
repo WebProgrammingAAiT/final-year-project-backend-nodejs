@@ -71,4 +71,21 @@ describe('Department APIs', () => {
 
       });
   });
+  describe('/PUT/:id department', async() => {
+      it('it should UPDATE a department given the id', async() => {
+        let department = new Department({ 
+          name: `random`,
+        });
+        await department.save(async(err, department) => {
+        let res = await chai.request(app).put('/api/departments/' + department._id).send({name:'updated department'}).set('Authorization', 'JWT ' + tokens);
+            
+        console.log(res.body);
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.an("object");
+        expect(res.body).to.have.property("msg").eql('Department updated successfully');
+        
+        });
+        
+      });
+  });
 });

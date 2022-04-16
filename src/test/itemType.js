@@ -17,6 +17,23 @@ describe('Item type APIs', () => {
     expect(response.body.itemTypes).to.have.lengthOf(2);
       });
   });
+  describe('/POST item type', () => {
+    let itemType1;
+      it('it should POST a item type ', async () => {
+          
+            itemType1 = new Item_Type({
+              name: `${Date.now().toString()} ${Math.random()}`,
+              itemCode: `${Date.now().toString()} ${Math.random()}`,
+            });
+           let response = await chai.request(app)
+            .post('/api/itemTypes')
+            .send(itemType1).set('Authorization', 'JWT ' + process.env.ADMIN_TOKEN);
+            
+    expect(response).to.have.status(201);
+    expect(response.body).to.be.an("object");
+    expect(response.body).to.have.property("msg").eql('ItemType added successfully');
+      });
+  });
   describe('/GET/:id item type', () => {
       it('it should GET a item type by the given id', () => {
           let itemType = new Item_Type({ 

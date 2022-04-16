@@ -5,8 +5,8 @@ import { hasValidToken,isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.put('/user/changeDepartment',hasValidToken,isAdmin,userCtrl.changeDepartment);
-
+router.put('/user/changeDepartment',hasValidToken,isAdmin,userCtrl.changeUserDepartment);
+router.get('/users',hasValidToken,isAdmin,  userCtrl.getUsers);
 
 
 

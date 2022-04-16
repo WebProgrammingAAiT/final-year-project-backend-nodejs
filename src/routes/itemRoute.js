@@ -5,7 +5,6 @@ import { hasValidToken,isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post('/items/subinventory/nonPO',hasValidToken,isAdmin,itemCtrl.addItemToSubinventoryNonPO)  
 router.get('/items/subinventory',itemCtrl.getSubinventoryItems);
 router.get('/items/subinventory/:id',itemCtrl.getSpecificSubinventoryItems);
 router.get('/items/department',itemCtrl.getDepartmentItems);

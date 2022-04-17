@@ -7,8 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky install"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -33,15 +32,9 @@
     "nanoid": "^3.3.2"
   },
   "devDependencies": {
-    "husky": "^7.0.4",
-    "lint-staged": "^12.3.8",
-    "nodemon": "^2.0.15",
-    "prettier": "^2.6.2"
+    "nodemon": "^2.0.15"
   },
   "engines": {
     "node": "14.x"
-  },
-  "lint-staged": {
-    "*.{js,css,md}": "prettier --write"
   }
 }

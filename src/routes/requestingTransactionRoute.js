@@ -6,12 +6,6 @@ const router = express.Router();
 
 //TODO: add department user check
 router.post("/transactions/requesting", requestingTransactionCtrl.requestItems);
-router.get(
-  "/transactions/requesting/pending",
-  requestingTransactionCtrl.getPendingRequestingTransactions
-);
-router.get(
-  "/transactions/requesting/approved",
-  requestingTransactionCtrl.getApprovedRequestingTransactions
-);
+router.get("/transactions/requesting/pending", requestingTransactionCtrl.getPendingRequestingTransactions);
+router.get("/transactions/requesting/approved", requestingTransactionCtrl.getApprovedRequestingTransactions);
 export default router;

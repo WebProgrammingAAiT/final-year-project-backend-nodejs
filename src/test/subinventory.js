@@ -71,4 +71,47 @@ describe('Subinventory APIs', () => {
 
       });
   });
+  describe('/PUT/:id subinventory', async() => {
+      it('it should UPDATE a subinventory given the id', async() => {
+        let subinventory = new Subinventory({ 
+          name: `random`,
+        });
+        await subinventory.save(async(err, subinventory) => {
+        let res = await chai.request(app).put('/api/subinventories/' + subinventory._id).send({name:'updated subinventory'}).set('Authorization', 'JWT ' + tokens);
+            
+        console.log(res.body);
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.an("object");
+        expect(res.body).to.have.property("msg").eql('Subinventory updated successfully');
+        
+        });
+        
+      });
+  });
+  describe('/DELETE/:id subinventory', () => {
+    let tokens;
+    before(async()=>{
+        let response = await chai.request(app).post("/api/login").send(
+            {
+                "emailOrUsername": "admin",
+                "password": "itsc2022"
+            });
+        tokens = (response.body.accessToken);
+    });
+      it('it should DELETE a subinventory given the id', () => {
+        let subinventory = new Subinventory({ 
+          name: `random`,
+        });
+        subinventory.save(async(err, subinventory) => {
+        let res = await chai.request(app).delete('/api/subinventories/' + subinventory._id)
+        .set('Authorization', 'JWT ' + tokens);
+      
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.an("object");
+        expect(res.body).to.have.property("msg").eql('Subinventory deleted successfully');
+        
+        });
+        
+      });
+  });
 });

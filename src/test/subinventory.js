@@ -78,8 +78,7 @@ describe('Subinventory APIs', () => {
         });
         await subinventory.save(async(err, subinventory) => {
         let res = await chai.request(app).put('/api/subinventories/' + subinventory._id).send({name:'updated subinventory'}).set('Authorization', 'JWT ' + tokens);
-            
-        console.log(res.body);
+      
         expect(res).to.have.status(200);
         expect(res.body).to.be.an("object");
         expect(res.body).to.have.property("msg").eql('Subinventory updated successfully');

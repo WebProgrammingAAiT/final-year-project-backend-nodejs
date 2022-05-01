@@ -12,9 +12,9 @@ const transactionSchema = mongoose.Schema(
     //   enum: ["receive", "request", "return"],
     //   required: true,
     // },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User",required:true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true,discriminatorKey: 'type' }
+  { timestamps: true, discriminatorKey: "type" }
 );
 
 export default mongoose.model("Transaction", transactionSchema);

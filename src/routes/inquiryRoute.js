@@ -5,6 +5,7 @@ import { hasValidToken, isAdmin } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/inquiries/onHand", inquiryCtrl.onHandInquiry);
+router.get("/inquiries/trackItem", inquiryCtrl.trackItem);
 // router.get('/items/subinventory/:id',itemCtrl.getSpecificSubinventoryItems);
 // router.get('/items/department',itemCtrl.getDepartmentItems);
 // router.get('/items/:id',itemCtrl.getItem);

@@ -15,6 +15,7 @@ import requestingTransactionRoute from "./routes/requestingTransactionRoute.js";
 import receivingTransactionRoute from "./routes/receivingTransactionRoute.js";
 import returningTransactionRoute from "./routes/returningTransactionRoute.js";
 import purchaseOrderRoute from "./routes/purchaseOrderRoute.js";
+import inquiryRoute from "./routes/inquiryRoute.js";
 
 // *Useful for getting environment variables
 dotenv.config();
@@ -40,6 +41,7 @@ app.use("/api", requestingTransactionRoute);
 app.use("/api", transferringTransactionRoute);
 app.use("/api", returningTransactionRoute);
 app.use("/api", purchaseOrderRoute);
+app.use("/api", inquiryRoute);
 
 //db connection
 mongoose

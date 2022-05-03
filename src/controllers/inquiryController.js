@@ -7,10 +7,61 @@ import DepartmentItemCollection from "../models/departmentItemModel.js";
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
 import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
 
-const itemCtrl = {
-  getSubinventoryItems: async (req, res) => {
+const inquiryCtrl = {
+  onHandInquiry: async (req, res) => {
     try {
-      const items = await SubinventoryItemCollection.find();
+      const { subinventory, endDate } = req.query;
+      const items = await SubinventoryItemCollection.aggregate([
+        {
+          $match: {
+            subinventory: mongoose.Types.ObjectId(subinventory),
+          },
+        },
+        {
+          $group: {
+            _id: "$itemType",
+            quantity: {
+              $sum: 1,
+            },
+            averagePrice: {
+              $avg: "$price",
+            },
+          },
+        },
+        {
+          $project: {
+            quantity: 1,
+            averagePrice: 1,
+            totalAmount: {
+              $multiply: ["$quantity", "$averagePrice"],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "item_types",
+            localField: "_id",
+            foreignField: "_id",
+            as: "itemType",
+          },
+        },
+        {
+          $unwind: {
+            path: "$itemType",
+          },
+        },
+        {
+          $project: {
+            "itemType.createdAt": 0,
+            "itemType.updatedAt": 0,
+          },
+        },
+        {
+          $sort: {
+            totalAmount: -1,
+          },
+        },
+      ]);
       return res.status(200).json({ items });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -116,4 +167,4 @@ const itemCtrl = {
   },
 };
 
-export default itemCtrl;
+export default inquiryCtrl;

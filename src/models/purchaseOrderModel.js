@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const purchaseOrderSchema = mongoose.Schema(
   {
-    purchaseOrderNumber: Number,
+    purchaseOrderNumber: { type: Number, unique: true },
     purchasedItems: [
       {
         itemType: { type: mongoose.Schema.Types.ObjectId, ref: "Item_Type" },
@@ -23,5 +23,4 @@ const purchaseOrderSchema = mongoose.Schema(
   },
   { timestamps: true }
 );
-
 export default mongoose.model("Purchase_Order", purchaseOrderSchema);

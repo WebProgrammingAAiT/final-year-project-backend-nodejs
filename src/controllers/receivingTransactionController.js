@@ -3,6 +3,7 @@ import SubinventoryCollection from "../models/subinventoryModel.js";
 import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
+import PurchaseOrderCollection from "../models/purchaseOrderModel.js";
 import { customAlphabet } from "nanoid";
 
 const alphabet = "0123456789-";
@@ -111,6 +112,12 @@ const receivingTransactionCtrl = {
       const { itemsToBeAdded, user, purchaseOrderNumber } = req.body;
       if (!itemsToBeAdded || itemsToBeAdded.length === 0 || !user || !purchaseOrderNumber) {
         return res.sendStatus(400);
+      }
+      const purchaseOrder = await PurchaseOrderCollection.findOne({
+        purchaseOrderNumber,
+      });
+      if (!purchaseOrder) {
+        return res.status(404).json({ msg: "No purchase order found with the specified purchase number." });
       }
       let mapOfItemTypeToItem = {};
 

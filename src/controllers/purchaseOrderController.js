@@ -11,7 +11,7 @@ const purchaseOrderCtrl = {
         purchaseOrderNumber,
         purchasedItems,
       });
-      return res.status(201).json({ purchaseOrder });
+      return res.status(201).json({ msg: " Purchase order created successfully" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
@@ -31,7 +31,7 @@ const purchaseOrderCtrl = {
         return res.sendStatus(400);
       }
       const purchaseOrder = await PurchaseOrderCollection.findOne({ purchaseOrderNumber });
-      if (!purchaseOrder) return res.status(404).json({ msg: "No purchase order with the specified id found." });
+      if (!purchaseOrder) return res.status(404).json({ msg: "No purchase order with the specified purchase number found." });
 
       return res.status(200).json({ purchaseOrder });
     } catch (err) {

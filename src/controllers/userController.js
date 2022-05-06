@@ -3,6 +3,22 @@ import UserCollection from "../models/userModel.js";
 import bcrypt from "bcrypt";
 
 const userCtrl = {
+  getUsers: async (req, res) => {
+    try {
+      const users = await UserCollection.find({}).select("-password");
+      return res.status(200).json({ users });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getUser: async (req, res) => {
+    try {
+      const user = await UserCollection.findById(req.userId);
+      return res.status(200).json({ user });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
   changeUserDepartment: async (req, res) => {
     try {
       const { emailOrUsername, departmentId } = req.body;
@@ -13,8 +29,7 @@ const userCtrl = {
 
       if (!user) return res.status(404).json({ msg: "No user found." });
 
-      if (user.role !== "departmentUser")
-        return res.status(400).json({ msg: "User is not a department user." });
+      if (user.role !== "departmentUser") return res.status(400).json({ msg: "User is not a department user." });
 
       user.department = departmentId;
       await user.save();
@@ -29,9 +44,7 @@ const userCtrl = {
       const { role, departmentId } = req.body;
       if (!emailOrUsername || !role) return res.sendStatus(400);
       if (role !== "propertyAdminUser" && role !== "departmentUser") {
-        return res
-          .status(400)
-          .json({ msg: "Role must be propertyAdminUser or departmentUser" });
+        return res.status(400).json({ msg: "Role must be propertyAdminUser or departmentUser" });
       }
       if (role == "departmentUser" && !departmentId) {
         return res.status(400).json({ msg: "Department Id is required" });
@@ -70,10 +83,7 @@ const userCtrl = {
       const { emailOrUsername } = req.params;
       const { newPassword } = req.body;
       if (!emailOrUsername || !newPassword) return res.sendStatus(400);
-      if (newPassword.length < 6)
-        return res
-          .status(400)
-          .json({ msg: "Password must be at least 6 characters long" });
+      if (newPassword.length < 6) return res.status(400).json({ msg: "Password must be at least 6 characters long" });
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -98,15 +108,26 @@ const userCtrl = {
       // the i is for case insensitive search
       if (searchTerm) {
         filter = {
-          $or: [
-            { username: { $regex: searchTerm, $options: "i" } },
-            { email: { $regex: searchTerm, $options: "i" } },
-          ],
+          $or: [{ username: { $regex: searchTerm, $options: "i" } }, { email: { $regex: searchTerm, $options: "i" } }],
         };
       }
       let users = await UserCollection.find(filter).select("-password");
 
       return res.status(200).json({ users });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  deleteUser: async (req, res) => {
+    try {
+      const { emailOrUsername } = req.params;
+      if (!emailOrUsername) return res.sendStatus(400);
+      const user = await UserCollection.findOneAndDelete({
+        $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+      });
+      if (!user) return res.status(404).json({ msg: "No user found" });
+      return res.status(200).json({ msg: "User deleted successfully" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

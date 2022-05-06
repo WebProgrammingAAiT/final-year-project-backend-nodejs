@@ -6,7 +6,7 @@ import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import DepartmentItemCollection from "../models/departmentItemModel.js";
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
 import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
-
+import { getPaginatedResult } from "../utils/getPaginatedResult.js";
 const itemCtrl = {
   getSubinventoryItems: async (req, res) => {
     try {
@@ -26,10 +26,18 @@ const itemCtrl = {
     }
   },
 
-  getDepartmentItems: async (req, res) => {
+  getAllDepartmentItems: async (req, res) => {
     try {
-      const items = await DepartmentItemCollection.find();
-      return res.status(200).json({ items });
+      const itemsLength = await DepartmentItemCollection.countDocuments().exec();
+      const results = getPaginatedResult(req, res, itemsLength);
+      const items = await DepartmentItemCollection.find()
+        .populate("itemType department", "itemCode name")
+        .limit(results.limit)
+        .skip(results.startIndex);
+      results.items = items;
+      delete results.limit;
+      delete results.startIndex;
+      return res.status(200).json({ ...results });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

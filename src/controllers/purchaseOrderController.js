@@ -18,7 +18,7 @@ const purchaseOrderCtrl = {
   },
   getPurchaseOrders: async (req, res) => {
     try {
-      const purchaseOrders = await PurchaseOrderCollection.find();
+      const purchaseOrders = await PurchaseOrderCollection.find().populate("purchasedItems.itemType", "name itemCode");
       return res.status(200).json({ purchaseOrders });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -30,7 +30,10 @@ const purchaseOrderCtrl = {
       if (!purchaseOrderNumber) {
         return res.sendStatus(400);
       }
-      const purchaseOrder = await PurchaseOrderCollection.findOne({ purchaseOrderNumber });
+      const purchaseOrder = await PurchaseOrderCollection.findOne({ purchaseOrderNumber }).populate(
+        "purchasedItems.itemType",
+        "name itemCode"
+      );
       if (!purchaseOrder) return res.status(404).json({ msg: "No purchase order with the specified purchase number found." });
 
       return res.status(200).json({ purchaseOrder });

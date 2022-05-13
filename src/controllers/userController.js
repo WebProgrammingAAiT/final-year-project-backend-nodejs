@@ -13,7 +13,22 @@ const userCtrl = {
   },
   getUser: async (req, res) => {
     try {
-      const user = await UserCollection.findById(req.userId);
+      const user = await UserCollection.findById(req.userId).select("-password").populate("department", "name");
+      return res.status(200).json({ user });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getUserById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.sendStatus(400);
+      }
+      const user = await UserCollection.findById(id).select("-password").populate("department", "name");
+      if (!user) {
+        return res.status(404).json({ msg: "No user found." });
+      }
       return res.status(200).json({ user });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

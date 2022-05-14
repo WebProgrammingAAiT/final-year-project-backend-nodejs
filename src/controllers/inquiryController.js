@@ -2,65 +2,65 @@ import mongoose from "mongoose";
 import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
 import TransactionCollection from "../models/transactionModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
+import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 
 const inquiryCtrl = {
   onHandInquiry: async (req, res) => {
     try {
-      const { subinventory, endDate } = req.query;
-      const items = await ReceivingTransactionCollection.aggregate([
+      const { subinventory } = req.query;
+
+      const items = await SubinventoryItemCollection.aggregate([
         {
           $match: {
-            type: "Receiving_Transaction",
+            subinventory: mongoose.Types.ObjectId(subinventory),
           },
         },
         {
-          $project: {
-            _id: 1,
-            receivedItems: {
-              $filter: {
-                input: "$receivedItems",
-                as: "receivedItems",
-                cond: {
-                  $eq: ["$$receivedItems.subinventory", mongoose.Types.ObjectId("6252bbf785093e0c778f0621")],
-                },
-              },
+          $group: {
+            _id: "$itemType",
+            quantity: {
+              $sum: 1,
             },
-          },
-        },
-        {
-          $match: {
-            $expr: {
-              $gt: [
-                {
-                  $size: "$receivedItems",
-                },
-                0,
-              ],
+            averagePrice: {
+              $avg: "$price",
             },
           },
         },
         {
           $project: {
-            "receivedItems.items": 1,
+            quantity: 1,
+            averagePrice: 1,
+            totalAmount: {
+              $multiply: ["$quantity", "$averagePrice"],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "item_types",
+            localField: "_id",
+            foreignField: "_id",
+            as: "itemType",
           },
         },
         {
           $unwind: {
-            path: "$receivedItems",
+            path: "$itemType",
           },
         },
         {
-          $replaceRoot: {
-            newRoot: "$receivedItems",
+          $project: {
+            "itemType.createdAt": 0,
+            "itemType.updatedAt": 0,
           },
         },
         {
-          $unwind: {
-            path: "$items",
+          $sort: {
+            totalAmount: -1,
           },
         },
       ]);
-      console.log(items.length);
+
       return res.status(200).json({ items });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
@@ -220,15 +220,9 @@ const inquiryCtrl = {
             },
           },
         },
-        {
-          $project: {
-            _id: 0,
-            receivedItems: 1,
-          },
-        },
       ]);
       await ItemTypeCollection.populate(items, {
-        path: "itemType",
+        path: "receivedItems.itemType",
         select: "name itemCode",
       });
       // if we want to show general overview

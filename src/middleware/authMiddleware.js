@@ -20,8 +20,7 @@ const hasValidToken = (req, res, next) => {
   }
 };
 
-
-// Admin that can create a user, delete a user 
+// Admin that can create a user, delete a user
 const isAdmin = async (req, res, next) => {
   try {
     const user = await UserCollection.findById(req.userId);
@@ -51,7 +50,7 @@ const isPropertyAdminUser = async (req, res, next) => {
     return res.status(500).json({ msg: err.message });
   }
 };
-// PropertyAdmin that can generate model 20
+// DepartmentUser can generate model 20
 const isDepartmentUser = async (req, res, next) => {
   try {
     const user = await UserCollection.findById(req.userId);
@@ -67,9 +66,4 @@ const isDepartmentUser = async (req, res, next) => {
   }
 };
 
-export {
-  hasValidToken,
-  isAdmin,
-  isPropertyAdminUser,
-  isDepartmentUser,
-};
+export { hasValidToken, isAdmin, isPropertyAdminUser, isDepartmentUser };

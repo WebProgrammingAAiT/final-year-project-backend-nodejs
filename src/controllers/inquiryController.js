@@ -109,16 +109,16 @@ const inquiryCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-  stockInquiry: async (req, res) => {
+  stockInquiryDetail: async (req, res) => {
     try {
       const { subinventory, startDate, endDate } = req.query;
       if (!subinventory || !startDate || !endDate) {
         return res.sendStatus(400);
       }
+
       const items = await ReceivingTransactionCollection.aggregate([
         {
           $match: {
-            type: "Receiving_Transaction",
             createdAt: {
               $gte: new Date(startDate),
               $lte: new Date(endDate),
@@ -151,40 +151,116 @@ const inquiryCtrl = {
             },
           },
         },
+        {
+          $project: {
+            _id: 0,
+            receivedItems: 1,
+          },
+        },
+        {
+          $unwind: {
+            path: "$receivedItems",
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: "$receivedItems",
+          },
+        },
       ]);
       await ItemTypeCollection.populate(items, {
-        path: "receivedItems.itemType",
+        path: "itemType",
         select: "name itemCode",
       });
-      //   let mapOfItemTypeToItem = {};
-
-      //   for (let i = 0; i < items.length; i++) {
-      //     let receivedItems = items[i].receivedItems;
-      //     for (let j = 0; j < receivedItems.length; j++) {
-      //       let item = receivedItems[j];
-      //       if (!item.itemType) continue;
-      //       if (mapOfItemTypeToItem[item.itemType.itemCode]) {
-      //         mapOfItemTypeToItem[item.itemType.itemCode].quantity += item.quantity;
-      //         mapOfItemTypeToItem[item.itemType.itemCode].totalUnitCost += item.unitCost * item.quantity;
-      //       } else {
-      //         mapOfItemTypeToItem[item.itemType.itemCode] = {};
-      //         mapOfItemTypeToItem[item.itemType.itemCode].quantity = item.quantity;
-      //         mapOfItemTypeToItem[item.itemType.itemCode].totalUnitCost = item.unitCost * item.quantity;
-      //         mapOfItemTypeToItem[item.itemType.itemCode].itemName = item.itemType.name;
-      //       }
-      //     }
-      //   }
-      //   let arrayOfReceivedItems = [];
-      //   Object.keys(mapOfItemTypeToItem).map((key) =>
-      //     arrayOfReceivedItems.push({
-      //       itemCode: key,
-      //       itemName: mapOfItemTypeToItem[key].itemName,
-      //       quantity: mapOfItemTypeToItem[key].quantity,
-      //       totalUnitCost: mapOfItemTypeToItem[key].totalUnitCost,
-      //     })
-      //   );
 
       return res.status(200).json({ items });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  stockInquiryGeneral: async (req, res) => {
+    try {
+      const { subinventory, startDate, endDate } = req.query;
+      if (!subinventory || !startDate || !endDate) {
+        return res.sendStatus(400);
+      }
+
+      const items = await ReceivingTransactionCollection.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(startDate),
+              $lte: new Date(endDate),
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            receivedItems: {
+              $filter: {
+                input: "$receivedItems",
+                as: "receivedItems",
+                cond: {
+                  $eq: ["$$receivedItems.subinventory", mongoose.Types.ObjectId(subinventory)],
+                },
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            $expr: {
+              $gt: [
+                {
+                  $size: "$receivedItems",
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            receivedItems: 1,
+          },
+        },
+      ]);
+      await ItemTypeCollection.populate(items, {
+        path: "itemType",
+        select: "name itemCode",
+      });
+      // if we want to show general overview
+      let mapOfItemTypeToItem = {};
+
+      for (let i = 0; i < items.length; i++) {
+        let receivedItems = items[i].receivedItems;
+        for (let j = 0; j < receivedItems.length; j++) {
+          let item = receivedItems[j];
+          if (!item.itemType) continue;
+          if (mapOfItemTypeToItem[item.itemType.itemCode]) {
+            mapOfItemTypeToItem[item.itemType.itemCode].quantity += item.quantity;
+            mapOfItemTypeToItem[item.itemType.itemCode].totalUnitCost += item.unitCost * item.quantity;
+          } else {
+            mapOfItemTypeToItem[item.itemType.itemCode] = {};
+            mapOfItemTypeToItem[item.itemType.itemCode].quantity = item.quantity;
+            mapOfItemTypeToItem[item.itemType.itemCode].totalUnitCost = item.unitCost * item.quantity;
+            mapOfItemTypeToItem[item.itemType.itemCode].itemName = item.itemType.name;
+          }
+        }
+      }
+      let arrayOfReceivedItems = [];
+      Object.keys(mapOfItemTypeToItem).map((key) =>
+        arrayOfReceivedItems.push({
+          itemCode: key,
+          itemName: mapOfItemTypeToItem[key].itemName,
+          quantity: mapOfItemTypeToItem[key].quantity,
+          totalUnitCost: mapOfItemTypeToItem[key].totalUnitCost,
+        })
+      );
+
+      return res.status(200).json({ mapOfItemTypeToItem });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

@@ -1,17 +1,12 @@
 import express from "express";
 import inquiryCtrl from "../controllers/inquiryController.js";
-import { hasValidToken, isAdmin } from "../middleware/authMiddleware.js";
+import { hasValidToken, isPropertyAdminUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/inquiries/onHand", inquiryCtrl.onHandInquiry);
-router.get("/inquiries/trackItem", inquiryCtrl.trackItem);
-router.get("/inquiries/stockInquiry", inquiryCtrl.stockInquiry);
-// router.get('/items/:id',itemCtrl.getItem);
-// router.put('/items/:id',hasValidToken,isAdmin,itemCtrl.updateItem);
-// router.delete('/items/:id',hasValidToken,isAdmin,itemCtrl.deleteItem);
-
-// //TODO: remove
-// router.put('/items/test/:id',itemCtrl.testItem);
+router.get("/inquiries/onHand", hasValidToken, isPropertyAdminUser, inquiryCtrl.onHandInquiry);
+router.get("/inquiries/trackItem", hasValidToken, isPropertyAdminUser, inquiryCtrl.trackItem);
+router.get("/inquiries/stockInquiry/detail", hasValidToken, isPropertyAdminUser, inquiryCtrl.stockInquiryDetail);
+router.get("/inquiries/stockInquiry/general", hasValidToken, isPropertyAdminUser, inquiryCtrl.stockInquiryGeneral);
 
 export default router;

@@ -5,6 +5,7 @@ import DepartmentCollection from "../models/departmentModel.js";
 import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import { customAlphabet } from "nanoid";
+import UserCollection from "../models/userModel.js";
 
 const alphabet = "0123456789-";
 const nanoid = customAlphabet(alphabet, 21);
@@ -16,15 +17,14 @@ const requestingTransactionCtrl = {
     session.startTransaction();
     try {
       const { requestedItems, user, department, requiredDate } = req.body;
-      if (
-        !requestedItems ||
-        requestedItems.length === 0 ||
-        !user ||
-        !department ||
-        !requiredDate
-      ) {
+      if (!requestedItems || requestedItems.length === 0 || !user || !department || !requiredDate) {
         return res.sendStatus(400);
       }
+      const requestingUser = await UserCollection.findById(req.userId);
+      if (requestingUser.department != department) {
+        return res.status(403).json({ msg: "You are not authorized to view this page." });
+      }
+
       let mapOfItemTypeToItem = {};
 
       // iterating through each item found in requestedItems to be added
@@ -41,24 +41,19 @@ const requestingTransactionCtrl = {
         }
 
         const itemType = await ItemTypeCollection.findById(itemTypeId);
-        if (!itemType)
-          return res
-            .status(404)
-            .json({ msg: "No itemType found with the specified id." });
+        if (!itemType) return res.status(404).json({ msg: "No itemType found with the specified id." });
 
         //checking first if the quantity specified is in the db first
-        const itemsInSubinventory =
-          await SubinventoryItemCollection.countDocuments(
-            {
-              itemType: itemTypeId,
-            },
-            { session: session }
-          ).exec();
+        const itemsInSubinventory = await SubinventoryItemCollection.countDocuments(
+          {
+            itemType: itemTypeId,
+          },
+          { session: session }
+        ).exec();
         if (itemsInSubinventory < quantity) {
           const itemType = await ItemTypeCollection.findById(itemTypeId);
           return res.status(400).json({
-            msg:
-              "Not enough items in subinventory for item type " + itemType.name,
+            msg: "Not enough items in subinventory for item type " + itemType.name,
           });
         }
         // adding to our map with key itemTypeId and value {quantity}
@@ -102,34 +97,33 @@ const requestingTransactionCtrl = {
   },
   getPendingRequestingTransactions: async (req, res) => {
     try {
-      const pendingRequestingTransactions =
-        await RequestingTransactionCollection.aggregate([
-          {
-            $match: {
-              requestedItems: {
-                $elemMatch: {
-                  status: "pending",
+      const pendingRequestingTransactions = await RequestingTransactionCollection.aggregate([
+        {
+          $match: {
+            requestedItems: {
+              $elemMatch: {
+                status: "pending",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            requiredDate: 1,
+            requestedItems: {
+              $filter: {
+                input: "$requestedItems",
+                as: "requestedItems",
+                cond: {
+                  $eq: ["$$requestedItems.status", "pending"],
                 },
               },
             },
           },
-          {
-            $project: {
-              _id: 1,
-              department: 1,
-              requiredDate: 1,
-              requestedItems: {
-                $filter: {
-                  input: "$requestedItems",
-                  as: "requestedItems",
-                  cond: {
-                    $eq: ["$$requestedItems.status", "pending"],
-                  },
-                },
-              },
-            },
-          },
-        ]);
+        },
+      ]);
       await ItemTypeCollection.populate(pendingRequestingTransactions, {
         path: "requestedItems.itemType",
         select: "name itemCode",
@@ -145,34 +139,33 @@ const requestingTransactionCtrl = {
   },
   getApprovedRequestingTransactions: async (req, res) => {
     try {
-      const approvedRequestingTransactions =
-        await RequestingTransactionCollection.aggregate([
-          {
-            $match: {
-              requestedItems: {
-                $elemMatch: {
-                  status: "approved",
+      const approvedRequestingTransactions = await RequestingTransactionCollection.aggregate([
+        {
+          $match: {
+            requestedItems: {
+              $elemMatch: {
+                status: "approved",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            requiredDate: 1,
+            requestedItems: {
+              $filter: {
+                input: "$requestedItems",
+                as: "requestedItems",
+                cond: {
+                  $eq: ["$$requestedItems.status", "approved"],
                 },
               },
             },
           },
-          {
-            $project: {
-              _id: 1,
-              department: 1,
-              requiredDate: 1,
-              requestedItems: {
-                $filter: {
-                  input: "$requestedItems",
-                  as: "requestedItems",
-                  cond: {
-                    $eq: ["$$requestedItems.status", "approved"],
-                  },
-                },
-              },
-            },
-          },
-        ]);
+        },
+      ]);
       await ItemTypeCollection.populate(approvedRequestingTransactions, {
         path: "requestedItems.itemType",
         select: "name itemCode",

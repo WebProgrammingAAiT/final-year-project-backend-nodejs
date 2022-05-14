@@ -1,11 +1,15 @@
 import express from "express";
 import receivingTransactionCtrl from "../controllers/receivingTransactionController.js";
-import { hasValidToken, isAdmin } from "../middleware/authMiddleware.js";
+import { hasValidToken, isPropertyAdminUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-//TODO: add property admin user check
-router.post("/transactions/receiving/PO", receivingTransactionCtrl.addItemToSubinventoryPO);
-router.post("/transactions/receiving/nonPO", receivingTransactionCtrl.addItemToSubinventoryNonPO);
+router.post("/transactions/receiving/PO", hasValidToken, isPropertyAdminUser, receivingTransactionCtrl.addItemToSubinventoryPO);
+router.post(
+  "/transactions/receiving/nonPO",
+  hasValidToken,
+  isPropertyAdminUser,
+  receivingTransactionCtrl.addItemToSubinventoryNonPO
+);
 
 export default router;

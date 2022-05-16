@@ -34,21 +34,18 @@ const returningTransactionCtrl = {
       // and checking if the itemType exists
       for (let i = 0; i < returnedItems.length; i++) {
         const item = returnedItems[i];
-        const { itemTypeId, tagNumber } = item;
+        const { tagNumber } = item;
 
-        if (!itemTypeId || !tagNumber) {
+        if (!tagNumber) {
           return res.sendStatus(400);
         }
-
-        const itemType = await ItemTypeCollection.findById(itemTypeId);
-        if (!itemType) return res.status(404).json({ msg: "No itemType found with the specified id." });
 
         //checking first if the item belongs to the department
         const itemInDepartment = await DepartmentItemCollection.findById(tagNumber).session(session);
         if (!itemInDepartment || itemInDepartment.department != department) {
           return res.status(400).json({ msg: "Item does not belong to the department" });
         }
-        arrayOfReturnedItems.push({ item: item.tagNumber });
+        arrayOfReturnedItems.push({ item: tagNumber, itemType: itemInDepartment.itemType });
       }
 
       await ReturningTransactionCollection.create(
@@ -74,6 +71,48 @@ const returningTransactionCtrl = {
     } finally {
       // Ending the session
       session.endSession();
+    }
+  },
+  getPendingReturningTransactions: async (req, res) => {
+    try {
+      const pendingReturningTransactions = await ReturningTransactionCollection.aggregate([
+        {
+          $match: {
+            returnedItems: {
+              $elemMatch: {
+                status: "pending",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            returnedDate: 1,
+            returnedItems: {
+              $filter: {
+                input: "$returnedItems",
+                as: "returnedItems",
+                cond: {
+                  $eq: ["$$returnedItems.status", "pending"],
+                },
+              },
+            },
+          },
+        },
+      ]);
+      await ItemTypeCollection.populate(pendingReturningTransactions, {
+        path: "returnedItems.itemType",
+        select: "name itemCode",
+      });
+      await DepartmentCollection.populate(pendingReturningTransactions, {
+        path: "department",
+        select: "name",
+      });
+      return res.status(200).json({ pendingReturningTransactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
     }
   },
   acceptReturnedItems: async (req, res) => {

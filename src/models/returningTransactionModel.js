@@ -12,6 +12,11 @@ const returningTransactionSchema = mongoose.Schema(
           ref: "Item",
           required: true,
         },
+        itemType: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Item_Type",
+          required: true,
+        },
         status: {
           type: String,
           enum: ["pending", "approved"],
@@ -23,7 +28,4 @@ const returningTransactionSchema = mongoose.Schema(
   { discriminatorKey: "type" }
 );
 
-export default TransactionCollection.discriminator(
-  "Returning_Transaction",
-  returningTransactionSchema
-);
+export default TransactionCollection.discriminator("Returning_Transaction", returningTransactionSchema);

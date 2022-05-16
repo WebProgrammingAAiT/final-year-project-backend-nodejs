@@ -5,6 +5,12 @@ import { hasValidToken, isDepartmentUser, isPropertyAdminUser } from "../middlew
 const router = express.Router();
 
 router.post("/transactions/returning", hasValidToken, isDepartmentUser, returningTransactionCtrl.returnItems);
+router.get(
+  "/transactions/returning/pending",
+  hasValidToken,
+  isPropertyAdminUser,
+  returningTransactionCtrl.getPendingReturningTransactions
+);
 router.post("/transactions/returning/accept", hasValidToken, isPropertyAdminUser, returningTransactionCtrl.acceptReturnedItems);
 
 export default router;

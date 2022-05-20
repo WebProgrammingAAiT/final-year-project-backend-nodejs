@@ -12,6 +12,6 @@ router.put("/items/:id", hasValidToken, isAdmin, itemCtrl.updateItem);
 router.delete("/items/:id", hasValidToken, isAdmin, itemCtrl.deleteItem);
 
 //TODO: remove
-router.put("/items/test/:id", itemCtrl.testItem);
+router.put("/item/test", itemCtrl.testItem);
 
 export default router;

@@ -9,7 +9,13 @@ router.get(
   "/transactions/returning/pending",
   hasValidToken,
   isPropertyAdminUser,
-  returningTransactionCtrl.getPendingReturningTransactions
+  returningTransactionCtrl.getPendingReturningTransactionsGroupedByDepartments
+);
+router.get(
+  "/transactions/returning/pending/departments/:departmentId",
+  hasValidToken,
+  isPropertyAdminUser,
+  returningTransactionCtrl.getPendingReturningTransactionsForDepartment
 );
 router.post("/transactions/returning/accept", hasValidToken, isPropertyAdminUser, returningTransactionCtrl.acceptReturnedItems);
 

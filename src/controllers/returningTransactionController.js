@@ -73,11 +73,90 @@ const returningTransactionCtrl = {
       session.endSession();
     }
   },
-  getPendingReturningTransactions: async (req, res) => {
+  getPendingReturningTransactionsGroupedByDepartments: async (req, res) => {
     try {
+      const pendingReturningTransactionsGroupedByDepartments = await ReturningTransactionCollection.aggregate([
+        {
+          $match: {
+            returnedItems: {
+              $elemMatch: {
+                status: "pending",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            returnedDate: 1,
+            returnedItems: {
+              $filter: {
+                input: "$returnedItems",
+                as: "returnedItems",
+                cond: {
+                  $eq: ["$$returnedItems.status", "pending"],
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$department",
+            totalItemsReturned: {
+              $sum: {
+                $cond: {
+                  if: {
+                    $isArray: "$returnedItems",
+                  },
+                  then: {
+                    $size: "$returnedItems",
+                  },
+                  else: "NA",
+                },
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "departments",
+            localField: "_id",
+            foreignField: "_id",
+            as: "department",
+          },
+        },
+        {
+          $unwind: {
+            path: "$department",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            "department._id": 1,
+            "department.name": 1,
+            totalItemsReturned: 1,
+          },
+        },
+      ]);
+
+      return res.status(200).json({ pendingReturningTransactionsGroupedByDepartments });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getPendingReturningTransactionsForDepartment: async (req, res) => {
+    try {
+      const { departmentId } = req.params;
+      if (!departmentId) {
+        return res.status(400).json({ msg: "Department Id is required" });
+      }
       const pendingReturningTransactions = await ReturningTransactionCollection.aggregate([
         {
           $match: {
+            department: mongoose.Types.ObjectId(departmentId),
             returnedItems: {
               $elemMatch: {
                 status: "pending",

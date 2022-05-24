@@ -5,6 +5,7 @@ import ReceivingTransactionCollection from "../models/receivingTransactionModel.
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import PurchaseOrderCollection from "../models/purchaseOrderModel.js";
 import { customAlphabet } from "nanoid";
+import smartContractInteraction from "./smartContractInteractionController.js";
 
 const alphabet = "0123456789-";
 const nanoid = customAlphabet(alphabet, 21);
@@ -15,6 +16,9 @@ const receivingTransactionCtrl = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
+      await smartContractInteraction.createReceiveTransaction();
+      return;
+
       // itemsToBeAdded is a list of objects, with each object having {itemTypeId,subinventoryId,quantity,unitCost}
       // user and source will be be a single value for all items to be added
       const { itemsToBeAdded, user, source } = req.body;

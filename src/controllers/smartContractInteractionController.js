@@ -118,5 +118,84 @@ const smartContractInteraction = {
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
+  validateTransaction: async (transaction) => {
+    transaction = JSON.parse(JSON.stringify(transaction));
+    let dataHash = hash(transaction);
+    const validate = await auditTrailContract.validateTransaction(transaction._id, dataHash);
+    return validate;
+  },
+  getTransaction: async (transactionId, type) => {
+    transactionId = transactionId.toString();
+    if (type == "Receiving_Transaction") {
+      const received = await auditTrailContract.getReceivingTransaction(transactionId);
+
+      let { id, source, user, receiptNumber, transactionType, receivedItems: receivedItemsFromBlockchain } = received;
+      let receivedItems = [];
+      for (let i = 0; i < receivedItemsFromBlockchain.length; i++) {
+        let receivedItem = receivedItemsFromBlockchain[i];
+        let { id, itemType, quantity, unitCost, subinventory, items } = receivedItem;
+        receivedItems.push({ id, itemType, quantity, unitCost, subinventory, items });
+      }
+      let transaction = { id, source, user, receiptNumber, transactionType, receivedItems };
+
+      return transaction;
+    } else if (type == "Requesting_Transaction") {
+      const request = await auditTrailContract.getRequestingTransaction(transactionId);
+
+      let {
+        id,
+        department,
+        requiredDate,
+        user,
+        receiptNumber,
+        transactionType,
+        requestedItems: requestedItemsFromBlockchain,
+      } = request;
+      let requestedItems = [];
+      for (let i = 0; i < requestedItemsFromBlockchain.length; i++) {
+        let requestedItem = requestedItemsFromBlockchain[i];
+        let { id, itemType, quantity, status } = requestedItem;
+        requestedItems.push({ id, itemType, quantity, status });
+      }
+      let transaction = { id, user, department, requiredDate, receiptNumber, transactionType, requestedItems };
+      return transaction;
+    } else if (type == "Transferring_Transaction") {
+      const transfer = await auditTrailContract.getTransferTransaction(transactionId);
+      let {
+        id,
+        department,
+        requestingTransaction,
+        user,
+        receiptNumber,
+        transactionType,
+        transferredItems: transferredItemsFromBlockchain,
+      } = transfer;
+
+      let { itemType, quantity, items } = transferredItemsFromBlockchain;
+      let transferredItems = { itemType, quantity, items };
+
+      let transaction = { id, user, department, requestingTransaction, receiptNumber, transactionType, transferredItems };
+      return transaction;
+    } else {
+      const returned = await auditTrailContract.getReturningTransaction(transactionId);
+      let {
+        id,
+        department,
+        returnedDate,
+        user,
+        receiptNumber,
+        transactionType,
+        returnedItems: returnedItemsFromBlockchain,
+      } = returned;
+      let returnedItems = [];
+      for (let i = 0; i < returnedItemsFromBlockchain.length; i++) {
+        let returnedItem = returnedItemsFromBlockchain[i];
+        let { id, item, itemType, status } = returnedItem;
+        returnedItems.push({ id, item, itemType, status });
+      }
+      let transaction = { id, department, user, returnedDate, receiptNumber, transactionType, returnedItems };
+      return transaction;
+    }
+  },
 };
 export default smartContractInteraction;

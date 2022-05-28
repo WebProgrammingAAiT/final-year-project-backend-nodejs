@@ -16,9 +16,6 @@ const receivingTransactionCtrl = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      await smartContractInteraction.createReceiveTransaction();
-      return;
-
       // itemsToBeAdded is a list of objects, with each object having {itemTypeId,subinventoryId,quantity,unitCost}
       // user and source will be be a single value for all items to be added
       const { itemsToBeAdded, user, source } = req.body;
@@ -82,7 +79,7 @@ const receivingTransactionCtrl = {
         })
       );
 
-      await ReceivingTransactionCollection.create(
+      let transaction = await ReceivingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -93,7 +90,10 @@ const receivingTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReceiveTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });
@@ -180,7 +180,7 @@ const receivingTransactionCtrl = {
         })
       );
 
-      await ReceivingTransactionCollection.create(
+      const transaction = await ReceivingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -191,7 +191,10 @@ const receivingTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReceiveTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });

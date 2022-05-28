@@ -3,11 +3,14 @@ import ReceivingTransactionCollection from "../models/receivingTransactionModel.
 import TransactionCollection from "../models/transactionModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
+import DepartmentCollection from "../models/departmentModel.js";
+import UserCollection from "../models/userModel.js";
 
 const inquiryCtrl = {
   onHandInquiry: async (req, res) => {
     try {
       const { subinventory } = req.query;
+      if (!subinventory) return res.status(400).json({ msg: "Please provide a subinventory" });
 
       const items = await SubinventoryItemCollection.aggregate([
         {
@@ -104,6 +107,14 @@ const inquiryCtrl = {
           },
         },
       ]);
+      await UserCollection.populate(itemHistory, {
+        path: "user",
+        select: "username email",
+      });
+      await DepartmentCollection.populate(itemHistory, {
+        path: "department",
+        select: "name",
+      });
       return res.status(200).json({ itemHistory });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

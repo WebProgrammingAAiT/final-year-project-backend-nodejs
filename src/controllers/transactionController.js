@@ -12,7 +12,26 @@ const transactionCtrl = {
     try {
       const { id } = req.params;
       if (!id) return res.sendStatus(400);
-      const transaction = await TransactionCollection.findById(id);
+      const transaction = await TransactionCollection.findById(id).populate(
+        "user department requestedItems.itemType receivedItems.itemType receivedItems.subinventory transferredItems.itemType returnedItems.itemType",
+        "username name"
+      );
+
+      if (!transaction) return res.status(404).json({ msg: "No transaction found" });
+
+      return res.status(200).json({ transaction });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getTransactionByReceiptNumber: async (req, res) => {
+    try {
+      const { receiptNumber } = req.params;
+      if (!receiptNumber) return res.sendStatus(400);
+      const transaction = await TransactionCollection.findOne({ receiptNumber }).populate(
+        "user department requestedItems.itemType receivedItems.itemType receivedItems.subinventory transferredItems.itemType returnedItems.itemType",
+        "username name"
+      );
 
       if (!transaction) return res.status(404).json({ msg: "No transaction found" });
 

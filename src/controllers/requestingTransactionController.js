@@ -6,6 +6,7 @@ import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import { customAlphabet } from "nanoid";
 import UserCollection from "../models/userModel.js";
+import smartContractInteraction from "./smartContractInteractionController.js";
 
 const alphabet = "0123456789-";
 const nanoid = customAlphabet(alphabet, 21);
@@ -70,7 +71,7 @@ const requestingTransactionCtrl = {
         })
       );
 
-      await RequestingTransactionCollection.create(
+      let transaction = await RequestingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -82,7 +83,10 @@ const requestingTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await RequestingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createRequestingTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) requested successfully" });

@@ -12,7 +12,7 @@ const transferTransactionSchema = mongoose.Schema(
 
     department: {
       type: mongoose.Schema.Types.ObjectId,
-      required: "Department",
+      ref: "Department",
       required: true,
     },
 
@@ -37,7 +37,4 @@ const transferTransactionSchema = mongoose.Schema(
   { discriminatorKey: "type" }
 );
 
-export default TransactionCollection.discriminator(
-  "Transferring_Transaction",
-  transferTransactionSchema
-);
+export default TransactionCollection.discriminator("Transferring_Transaction", transferTransactionSchema);

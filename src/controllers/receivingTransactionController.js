@@ -5,6 +5,7 @@ import ReceivingTransactionCollection from "../models/receivingTransactionModel.
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import PurchaseOrderCollection from "../models/purchaseOrderModel.js";
 import { customAlphabet } from "nanoid";
+import smartContractInteraction from "./smartContractInteractionController.js";
 
 const alphabet = "0123456789-";
 const nanoid = customAlphabet(alphabet, 21);
@@ -78,7 +79,7 @@ const receivingTransactionCtrl = {
         })
       );
 
-      await ReceivingTransactionCollection.create(
+      let transaction = await ReceivingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -89,7 +90,10 @@ const receivingTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReceiveTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });
@@ -176,7 +180,7 @@ const receivingTransactionCtrl = {
         })
       );
 
-      await ReceivingTransactionCollection.create(
+      const transaction = await ReceivingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -187,7 +191,10 @@ const receivingTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReceiveTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(201).json({ msg: "Item(s) added successfully" });

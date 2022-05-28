@@ -33,7 +33,4 @@ const receivingTransactionSchema = mongoose.Schema(
   { discriminatorKey: "type" }
 );
 
-export default TransactionCollection.discriminator(
-  "Receiving_Transaction",
-  receivingTransactionSchema
-);
+export default TransactionCollection.discriminator("Receiving_Transaction", receivingTransactionSchema);

@@ -8,6 +8,7 @@ import SubinventoryCollection from "../models/subinventoryModel.js";
 import DepartmentItemCollection from "../models/departmentItemModel.js";
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import UserCollection from "../models/userModel.js";
+import smartContractInteraction from "./smartContractInteractionController.js";
 
 import { customAlphabet } from "nanoid";
 
@@ -48,7 +49,7 @@ const returningTransactionCtrl = {
         arrayOfReturnedItems.push({ item: tagNumber, itemType: itemInDepartment.itemType });
       }
 
-      await ReturningTransactionCollection.create(
+      const transaction = await ReturningTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -60,7 +61,10 @@ const returningTransactionCtrl = {
         ],
         { session: session }
       );
-
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReturningTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReturningTransaction(t);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) return requested successfully" });

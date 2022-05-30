@@ -40,6 +40,38 @@ const transactionCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  getTransactions: async (req, res) => {
+    try {
+      const transactions = await TransactionCollection.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        {
+          $unwind: {
+            path: "$user",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            type: 1,
+            receiptNumber: 1,
+            "user.username": 1,
+            createdAt: 1,
+          },
+        },
+      ]);
+
+      return res.status(200).json({ transactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 };
 
 export default transactionCtrl;

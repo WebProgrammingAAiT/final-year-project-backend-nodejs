@@ -5,7 +5,7 @@ import smartContractInteraction from "./smartContractInteractionController.js";
 const auditTrailCtrl = {
   validateTransactions: async (req, res) => {
     try {
-      const transactions = await TransactionCollection.find({}).lean().limit(15).sort({ createdAt: -1 });
+      const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 });
       let validTransactions = [];
       let invalidTransactions = [];
       let missingTransactions = [];

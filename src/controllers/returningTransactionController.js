@@ -46,6 +46,11 @@ const returningTransactionCtrl = {
         if (!itemInDepartment || itemInDepartment.department != department) {
           return res.status(400).json({ msg: "Item does not belong to the department" });
         }
+        if (itemInDepartment.markedForReturn) {
+          return res.status(400).json({ msg: "Item(s) has/have already been marked for return" });
+        }
+        itemInDepartment.markedForReturn = true;
+        await itemInDepartment.save();
         arrayOfReturnedItems.push({ item: tagNumber, itemType: itemInDepartment.itemType });
       }
 
@@ -306,7 +311,7 @@ const returningTransactionCtrl = {
         });
       });
 
-      await ReceivingTransactionCollection.create(
+      const transaction = await ReceivingTransactionCollection.create(
         [
           {
             receiptNumber: nanoid(),
@@ -317,6 +322,10 @@ const returningTransactionCtrl = {
         ],
         { session: session }
       );
+      // refetching the transaction created with the lean() option,
+      // so it's smaller in size and benefit JSON.stringify()
+      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReceiveTransaction(t);
 
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();

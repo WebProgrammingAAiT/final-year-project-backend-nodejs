@@ -4,13 +4,19 @@ import smartContractInteraction from "./smartContractInteractionController.js";
 
 const auditTrailCtrl = {
   validateTransactions: async (req, res) => {
+    // const transaction = await TransactionCollection.findById("6297e106b0b880eb305ddbf4").lean().sort({ createdAt: -1 });
+    // let result = await smartContractInteraction.validateTransaction(transaction);
+    // return res.json({ result });
     try {
       const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 });
+      let transactionIdsFromDB = [];
       let validTransactions = [];
       let invalidTransactions = [];
-      let missingTransactions = [];
+      let missingTransactionsFromBlockchain = [];
+      let missingTransactionsFromDB = [];
       for (let i = 0; i < transactions.length; i++) {
         const transaction = transactions[i];
+        transactionIdsFromDB.push(transaction._id.toString());
         let blockchainTransaction = await BlockchainTransactionCollection.findOne({ transactionId: transaction._id }).lean();
         let result = await smartContractInteraction.validateTransaction(transaction);
 
@@ -19,10 +25,17 @@ const auditTrailCtrl = {
         } else if (result == "invalid") {
           invalidTransactions.push({ ethereumTxId: blockchainTransaction?.ethereumTxId, transactionId: transaction._id });
         } else {
-          missingTransactions.push({ ethereumTxId: blockchainTransaction?.ethereumTxId, transactionId: transaction._id });
+          missingTransactionsFromBlockchain.push({
+            ethereumTxId: blockchainTransaction?.ethereumTxId,
+            transactionId: transaction._id,
+          });
         }
       }
-      return res.json({ validTransactions, invalidTransactions, missingTransactions });
+      const transactionsFromBlockchain = await smartContractInteraction.getAuditedTransactions();
+
+      missingTransactionsFromDB = transactionsFromBlockchain.filter((item) => transactionIdsFromDB.indexOf(item) === -1);
+
+      return res.json({ validTransactions, invalidTransactions, missingTransactionsFromBlockchain, missingTransactionsFromDB });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }
@@ -39,14 +52,24 @@ const auditTrailCtrl = {
           "user department requestedItems.itemType receivedItems.itemType receivedItems.subinventory transferredItems.itemType returnedItems.itemType",
           "username name"
         );
+      let transactionFromBlockchain;
       if (!transactionFromDb) {
-        return res.status(404).json({ msg: "No transaction found" });
+        let typesOfTransactions = [
+          "Receiving_Transaction",
+          "Requesting_Transaction",
+          "Transferring_Transaction",
+          "Returning_Transaction",
+        ];
+        let counter = 0;
+        do {
+          transactionFromBlockchain = await smartContractInteraction.getTransaction(transactionId, typesOfTransactions[counter]);
+          counter++;
+        } while (transactionFromBlockchain.id == "");
+
+        return res.json({ transactionFromBlockchain, transactionFromDb: {} });
       }
 
-      let transactionFromBlockchain = await smartContractInteraction.getTransaction(
-        transactionFromDb._id,
-        transactionFromDb.type
-      );
+      transactionFromBlockchain = await smartContractInteraction.getTransaction(transactionFromDb._id, transactionFromDb.type);
       return res.json({ transactionFromDb, transactionFromBlockchain });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

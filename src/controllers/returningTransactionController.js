@@ -68,8 +68,12 @@ const returningTransactionCtrl = {
       );
       // refetching the transaction created with the lean() option,
       // so it's smaller in size and benefit JSON.stringify()
-      let t = await ReturningTransactionCollection.findById(transaction[0]._id).lean().session(session);
-      await smartContractInteraction.createReturningTransaction(t);
+      let tPopulated = await ReturningTransactionCollection.findById(transaction[0]._id)
+        .lean()
+        .populate("department returnedItems.itemType", "name")
+        .session(session);
+      let tNormal = await ReturningTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createReturningTransaction(tPopulated, tNormal);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) return requested successfully" });
@@ -324,8 +328,14 @@ const returningTransactionCtrl = {
       );
       // refetching the transaction created with the lean() option,
       // so it's smaller in size and benefit JSON.stringify()
-      let t = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
-      await smartContractInteraction.createReceiveTransaction(t);
+      let tPopulated = await ReceivingTransactionCollection.findById(transaction[0]._id)
+        .lean()
+        .populate("receivedItems.itemType receivedItems.subinventory", "name")
+        .session(session);
+      //not populated document (useful for hashing)
+      let tNormal = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+
+      await smartContractInteraction.createReceiveTransaction(tPopulated, tNormal);
 
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();

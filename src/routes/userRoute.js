@@ -7,6 +7,7 @@ const router = express.Router();
 router.put("/user/changeDepartment", hasValidToken, isAdmin, userCtrl.changeUserDepartment);
 router.get("/users", hasValidToken, isAdmin, userCtrl.getUsers);
 router.get("/user", hasValidToken, userCtrl.getUser);
+router.get("/userFromBlockchain/:id", hasValidToken, userCtrl.getUserFromBlockchain);
 router.get("/users/search", hasValidToken, isAdmin, userCtrl.searchForUsers);
 router.get("/users/:id", hasValidToken, isAdmin, userCtrl.getUserById);
 router.put("/users/:emailOrUsername/changeRole", hasValidToken, isAdmin, userCtrl.changeUserRole);

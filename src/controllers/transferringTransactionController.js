@@ -94,8 +94,14 @@ const transferringTransactionCtrl = {
       );
       // refetching the transaction created with the lean() option,
       // so it's smaller in size and benefit JSON.stringify()
-      let t = await TransferringTransactionCollection.findById(transaction[0]._id).lean().session(session);
-      await smartContractInteraction.createTransferringTransaction(t);
+      let tPopulated = await TransferringTransactionCollection.findById(transaction[0]._id)
+        .lean()
+        .populate("department transferredItems.itemType", "name")
+        .session(session);
+      //not populated document (useful for hashing)
+
+      let tNormal = await TransferringTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.createTransferringTransaction(tPopulated, tNormal);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) added to department successfully" });

@@ -13,8 +13,19 @@ const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 const auditTrailContract = new ethers.Contract(CONTRACT_ADDRESS, contractJson.abi, signer);
 
 const smartContractInteraction = {
-  createReceiveTransaction: async (transaction) => {
-    let receivingTransaction = JSON.parse(JSON.stringify(transaction));
+  createUser: async (user, createdBy) => {
+    let createdUser = JSON.parse(JSON.stringify(user));
+    const tx = await auditTrailContract.createUser(createdUser._id, createdUser.username, createdBy, createdUser.createdAt);
+    await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: createdUser._id });
+  },
+  getUser: async (userId) => {
+    const user = await auditTrailContract.getUser(userId);
+    let { id, username, createdBy, timestamp } = user;
+    return { id, username, createdBy, timestamp };
+  },
+  createReceiveTransaction: async (transactionPopulated, transactionNormal) => {
+    let receivingTransactionNormal = JSON.parse(JSON.stringify(transactionNormal));
+    let receivingTransaction = JSON.parse(JSON.stringify(transactionPopulated));
     let itemsOfInterest = [];
     let newItems = [];
     let id = receivingTransaction._id;
@@ -23,11 +34,23 @@ const smartContractInteraction = {
     for (let i = 0; i < receivingTransaction.receivedItems.length; i++) {
       let receivedItem = receivingTransaction.receivedItems[i];
       let { itemType, subinventory, quantity, unitCost, _id: objId } = receivedItem;
-      itemsOfInterest.push([objId, itemType, quantity.toString(), unitCost.toString(), subinventory]);
+      let itemTypeId = itemType._id;
+      let itemTypeName = itemType.name;
+      let subinventoryId = subinventory._id;
+      let subinventoryName = subinventory.name;
+      itemsOfInterest.push([
+        objId,
+        itemTypeId,
+        itemTypeName,
+        quantity.toString(),
+        unitCost.toString(),
+        subinventoryId,
+        subinventoryName,
+      ]);
       newItems.push(receivedItem.items);
     }
 
-    let dataHash = hash(receivingTransaction);
+    let dataHash = hash(receivingTransactionNormal);
 
     const tx = await auditTrailContract.createReceivingTransaction(
       dataHash,
@@ -41,23 +64,29 @@ const smartContractInteraction = {
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
-  createRequestingTransaction: async (transaction) => {
-    let requestingTransaction = JSON.parse(JSON.stringify(transaction));
+  createRequestingTransaction: async (transactionPopulated, transactionNormal) => {
+    let requestingTransactionNormal = JSON.parse(JSON.stringify(transactionNormal));
+    let requestingTransaction = JSON.parse(JSON.stringify(transactionPopulated));
 
     let itemsOfInterest = [];
     let id = requestingTransaction._id;
     let { receiptNumber, user, department, requiredDate } = requestingTransaction;
+    let departmentId = department._id;
+    let departmentName = department.name;
     for (let i = 0; i < requestingTransaction.requestedItems.length; i++) {
       let requestedItem = requestingTransaction.requestedItems[i];
       let { itemType, status, quantity, _id: objId } = requestedItem;
-      itemsOfInterest.push([objId, itemType, status, quantity.toString()]);
+      let itemTypeId = itemType._id;
+      let itemTypeName = itemType.name;
+      itemsOfInterest.push([objId, itemTypeId, itemTypeName, status, quantity.toString()]);
     }
-    let dataHash = hash(requestingTransaction);
+    let dataHash = hash(requestingTransactionNormal);
 
     const tx = await auditTrailContract.createRequestingTransaction(
       dataHash,
       id,
-      department,
+      departmentId,
+      departmentName,
       requiredDate,
       receiptNumber,
       user,
@@ -66,24 +95,29 @@ const smartContractInteraction = {
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
-  createTransferringTransaction: async (transaction) => {
-    let transferringTransaction = JSON.parse(JSON.stringify(transaction));
+  createTransferringTransaction: async (transactionPopulated, transactionNormal) => {
+    let transferringTransactionNormal = JSON.parse(JSON.stringify(transactionNormal));
+    let transferringTransaction = JSON.parse(JSON.stringify(transactionPopulated));
     let itemsOfInterest = [
-      transferringTransaction.transferredItems["itemType"],
+      transferringTransaction.transferredItems["itemType"]._id,
+      transferringTransaction.transferredItems["itemType"].name,
       transferringTransaction.transferredItems["quantity"].toString(),
     ];
     let newItems = transferringTransaction.transferredItems.items;
 
     let id = transferringTransaction._id;
     let { requestingTransaction, department, receiptNumber, user } = transferringTransaction;
+    let departmentId = department._id;
+    let departmentName = department.name;
 
-    let dataHash = hash(transferringTransaction);
+    let dataHash = hash(transferringTransactionNormal);
 
     const tx = await auditTrailContract.createTransferringTransaction(
       dataHash,
       id,
       requestingTransaction,
-      department,
+      departmentId,
+      departmentName,
       receiptNumber,
       user,
       "Transferring_Transaction",
@@ -92,24 +126,30 @@ const smartContractInteraction = {
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
-  createReturningTransaction: async (transaction) => {
-    let returningTransaction = JSON.parse(JSON.stringify(transaction));
+  createReturningTransaction: async (transactionPopulated, transactionNormal) => {
+    let returningTransactionNormal = JSON.parse(JSON.stringify(transactionNormal));
+    let returningTransaction = JSON.parse(JSON.stringify(transactionPopulated));
     let itemsOfInterest = [];
 
     let id = returningTransaction._id;
     let { receiptNumber, user, department, returnedDate } = returningTransaction;
+    let departmentId = department._id;
+    let departmentName = department.name;
 
     for (let i = 0; i < returningTransaction.returnedItems.length; i++) {
       let returnedItem = returningTransaction.returnedItems[i];
       let { item, itemType, status, _id: objId } = returnedItem;
-      itemsOfInterest.push([objId, item, itemType, status]);
+      let itemTypeId = itemType._id;
+      let itemTypeName = itemType.name;
+      itemsOfInterest.push([objId, item, itemTypeId, itemTypeName, status]);
     }
-    let dataHash = hash(returningTransaction);
+    let dataHash = hash(returningTransactionNormal);
 
     const tx = await auditTrailContract.createReturningTransaction(
       dataHash,
       id,
-      department,
+      departmentId,
+      departmentName,
       returnedDate,
       receiptNumber,
       user,
@@ -133,8 +173,8 @@ const smartContractInteraction = {
       let receivedItems = [];
       for (let i = 0; i < receivedItemsFromBlockchain.length; i++) {
         let receivedItem = receivedItemsFromBlockchain[i];
-        let { id, itemType, quantity, unitCost, subinventory, items } = receivedItem;
-        receivedItems.push({ id, itemType, quantity, unitCost, subinventory, items });
+        let { id, itemTypeId, itemTypeName, quantity, unitCost, subinventoryId, subinventoryName, items } = receivedItem;
+        receivedItems.push({ id, itemTypeId, itemTypeName, quantity, unitCost, subinventoryId, subinventoryName, items });
       }
       let transaction = { id, source, user, receiptNumber, transactionType, receivedItems };
 
@@ -144,7 +184,8 @@ const smartContractInteraction = {
 
       let {
         id,
-        department,
+        departmentId,
+        departmentName,
         requiredDate,
         user,
         receiptNumber,
@@ -154,16 +195,17 @@ const smartContractInteraction = {
       let requestedItems = [];
       for (let i = 0; i < requestedItemsFromBlockchain.length; i++) {
         let requestedItem = requestedItemsFromBlockchain[i];
-        let { id, itemType, quantity, status } = requestedItem;
-        requestedItems.push({ id, itemType, quantity, status });
+        let { id, itemTypeId, itemTypeName, quantity, status } = requestedItem;
+        requestedItems.push({ id, itemTypeId, itemTypeName, quantity, status });
       }
-      let transaction = { id, user, department, requiredDate, receiptNumber, transactionType, requestedItems };
+      let transaction = { id, user, departmentId, departmentName, requiredDate, receiptNumber, transactionType, requestedItems };
       return transaction;
     } else if (type == "Transferring_Transaction") {
       const transfer = await auditTrailContract.getTransferTransaction(transactionId);
       let {
         id,
-        department,
+        departmentId,
+        departmentName,
         requestingTransaction,
         user,
         receiptNumber,
@@ -171,16 +213,26 @@ const smartContractInteraction = {
         transferredItems: transferredItemsFromBlockchain,
       } = transfer;
 
-      let { itemType, quantity, items } = transferredItemsFromBlockchain;
-      let transferredItems = { itemType, quantity, items };
+      let { itemTypeId, itemTypeName, quantity, items } = transferredItemsFromBlockchain;
+      let transferredItems = { itemTypeId, itemTypeName, quantity, items };
 
-      let transaction = { id, user, department, requestingTransaction, receiptNumber, transactionType, transferredItems };
+      let transaction = {
+        id,
+        user,
+        departmentId,
+        departmentName,
+        requestingTransaction,
+        receiptNumber,
+        transactionType,
+        transferredItems,
+      };
       return transaction;
     } else {
       const returned = await auditTrailContract.getReturningTransaction(transactionId);
       let {
         id,
-        department,
+        departmentId,
+        departmentName,
         returnedDate,
         user,
         receiptNumber,
@@ -190,12 +242,16 @@ const smartContractInteraction = {
       let returnedItems = [];
       for (let i = 0; i < returnedItemsFromBlockchain.length; i++) {
         let returnedItem = returnedItemsFromBlockchain[i];
-        let { id, item, itemType, status } = returnedItem;
-        returnedItems.push({ id, item, itemType, status });
+        let { id, item, itemTypeId, itemTypeName, status } = returnedItem;
+        returnedItems.push({ id, item, itemTypeId, itemTypeName, status });
       }
-      let transaction = { id, department, user, returnedDate, receiptNumber, transactionType, returnedItems };
+      let transaction = { id, departmentId, departmentName, user, returnedDate, receiptNumber, transactionType, returnedItems };
       return transaction;
     }
+  },
+  getAuditedTransactions: async () => {
+    const audited = await auditTrailContract.getAllTransactions();
+    return audited;
   },
 };
 export default smartContractInteraction;

@@ -1,7 +1,7 @@
 import DepartmentUserCollection from "../models/departmentUserModel.js";
 import UserCollection from "../models/userModel.js";
 import bcrypt from "bcrypt";
-
+import smartContractInteraction from "./smartContractInteractionController.js";
 const userCtrl = {
   getUsers: async (req, res) => {
     try {
@@ -14,6 +14,18 @@ const userCtrl = {
   getUser: async (req, res) => {
     try {
       const user = await UserCollection.findById(req.userId).select("-password").populate("department", "name");
+      return res.status(200).json({ user });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getUserFromBlockchain: async (req, res) => {
+    try {
+      let id = req.params.id;
+      if (!id) {
+        return res.sendStatus(400);
+      }
+      const user = await smartContractInteraction.getUser(id);
       return res.status(200).json({ user });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

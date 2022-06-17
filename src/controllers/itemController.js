@@ -98,53 +98,6 @@ const itemCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
-
-  //TODO: remove
-  testItem: async (req, res) => {
-    const returningTransactions = await ReturningTransactionCollection.find();
-    for (let i = 0; i < returningTransactions.length; i++) {
-      const returningTransaction = returningTransactions[i];
-      for (let j = 0; j < returningTransaction.returnedItems.length; j++) {
-        const bb = returningTransaction.returnedItems[j];
-        if (bb.itemType) continue;
-        const itemFromDb = await ItemCollection.findById(bb.item);
-        if (itemFromDb) {
-          await ReturningTransactionCollection.findByIdAndUpdate(returningTransaction._id, {
-            $set: {
-              returnedItems: [
-                ...returningTransaction.returnedItems.filter((itemInArray) => !itemInArray.item.equals(itemFromDb._id)),
-                { item: itemFromDb._id, itemType: itemFromDb.itemType, status: returningTransaction.returnedItems[j].status },
-              ],
-            },
-          });
-        }
-      }
-    }
-    return res.status(200).json({ msg: "done" });
-
-    // const { itemTypeId, quantity, department } = req.body;
-
-    // const items = await ItemCollection.find({
-    //   type: "Subinventory_Item",
-    //   itemType: itemTypeId,
-    // }).limit(quantity);
-    // if (items.length < quantity) {
-    //   return res.status(400).json({ msg: "Not enough items in subinventory for item type" });
-    // }
-    // console.log(items[0]);
-    // for (let i = 0; i < items.length; i++) {
-    //   const item = items[i];
-    //   await ItemCollection.replaceOne(
-    //     { _id: item._id },
-    //     {
-    //       itemType: itemTypeId,
-    //       department,
-    //       type: "Department_Item",
-    //       createdAt: item.createdAt,
-    //     }
-    //   );
-    // }
-  },
 };
 
 export default itemCtrl;

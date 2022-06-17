@@ -1,11 +1,10 @@
-import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
 import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
+import TransferringTransactionCollection from "../models/transferringTransactionModel.js";
 import ReturningTransactionCollection from "../models/returningTransactionModel.js";
+import DepartmentCollection from "../models/departmentModel.js";
+import ItemTypeCollection from "../models/itemTypeModel.js";
 import TransactionCollection from "../models/transactionModel.js";
-import { customAlphabet } from "nanoid";
-
-const alphabet = "0123456789-";
-const nanoid = customAlphabet(alphabet, 21);
 
 const transactionCtrl = {
   getTransactionById: async (req, res) => {
@@ -68,6 +67,205 @@ const transactionCtrl = {
       ]);
 
       return res.status(200).json({ transactions });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+  getRecentRequestingAndReturningTransactions: async (req, res) => {
+    try {
+      let now = new Date();
+      let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const pendingReturningTransactionsGroupedByDepartments = await ReturningTransactionCollection.aggregate([
+        {
+          $match: {
+            returnedItems: {
+              $elemMatch: {
+                status: "pending",
+              },
+            },
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            returnedDate: 1,
+            returnedItems: {
+              $filter: {
+                input: "$returnedItems",
+                as: "returnedItems",
+                cond: {
+                  $eq: ["$$returnedItems.status", "pending"],
+                },
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$department",
+            totalItemsReturned: {
+              $sum: {
+                $cond: {
+                  if: {
+                    $isArray: "$returnedItems",
+                  },
+                  then: {
+                    $size: "$returnedItems",
+                  },
+                  else: "NA",
+                },
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "departments",
+            localField: "_id",
+            foreignField: "_id",
+            as: "department",
+          },
+        },
+        {
+          $unwind: {
+            path: "$department",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            "department._id": 1,
+            "department.name": 1,
+            totalItemsReturned: 1,
+          },
+        },
+      ]);
+      const pendingRequestingTransactions = await RequestingTransactionCollection.aggregate([
+        {
+          $match: {
+            requestedItems: {
+              $elemMatch: {
+                status: "pending",
+              },
+            },
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            department: 1,
+            requiredDate: 1,
+            requestedItems: {
+              $filter: {
+                input: "$requestedItems",
+                as: "requestedItems",
+                cond: {
+                  $eq: ["$$requestedItems.status", "pending"],
+                },
+              },
+            },
+          },
+        },
+      ]);
+      await ItemTypeCollection.populate(pendingRequestingTransactions, {
+        path: "requestedItems.itemType",
+        select: "name itemCode",
+      });
+      await DepartmentCollection.populate(pendingRequestingTransactions, {
+        path: "department",
+        select: "name",
+      });
+
+      let numberOfReceivedTransactionsToday = await ReceivingTransactionCollection.aggregate([
+        {
+          // useful to set the default of isReturn to false
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                {
+                  isReturn: false,
+                },
+                "$$ROOT",
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            type: "Receiving_Transaction",
+            isReturn: false,
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $count: "value",
+        },
+      ]);
+      let numberOfTransferredTransactionsToday = await TransferringTransactionCollection.aggregate([
+        {
+          $match: {
+            type: "Transferring_Transaction",
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $count: "value",
+        },
+      ]);
+      let numberOfReturnedTransactionsToday = await ReturningTransactionCollection.aggregate([
+        {
+          $match: {
+            type: "Returning_Transaction",
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $count: "value",
+        },
+      ]);
+      let numberOfRequestedTransactionsToday = await RequestingTransactionCollection.aggregate([
+        {
+          $match: {
+            type: "Requesting_Transaction",
+            createdAt: { $gte: startOfToday },
+          },
+        },
+        {
+          $count: "value",
+        },
+      ]);
+      if (!numberOfReceivedTransactionsToday[0]) {
+        numberOfReceivedTransactionsToday = 0;
+      } else {
+        numberOfReceivedTransactionsToday = numberOfReceivedTransactionsToday[0].value;
+      }
+      if (!numberOfTransferredTransactionsToday[0]) {
+        numberOfTransferredTransactionsToday = 0;
+      } else {
+        numberOfTransferredTransactionsToday = numberOfTransferredTransactionsToday[0].value;
+      }
+      if (!numberOfReturnedTransactionsToday[0]) {
+        numberOfReturnedTransactionsToday = 0;
+      } else {
+        numberOfReturnedTransactionsToday = numberOfReturnedTransactionsToday[0].value;
+      }
+      if (!numberOfRequestedTransactionsToday[0]) {
+        numberOfRequestedTransactionsToday = 0;
+      } else {
+        numberOfRequestedTransactionsToday = numberOfRequestedTransactionsToday[0].value;
+      }
+
+      return res.status(200).json({
+        numberOfReceivedTransactionsToday,
+        numberOfTransferredTransactionsToday,
+        numberOfReturnedTransactionsToday,
+        numberOfRequestedTransactionsToday: numberOfRequestedTransactionsToday,
+        pendingReturningTransactionsGroupedByDepartments,
+        pendingRequestingTransactions,
+      });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

@@ -19,8 +19,16 @@ const returningTransactionSchema = mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ["pending", "approved"],
+          enum: ["pending", "approved", "denied"],
           default: "pending",
+        },
+        approvedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        deniedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
         },
       },
     ],

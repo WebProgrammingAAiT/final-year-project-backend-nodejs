@@ -18,5 +18,6 @@ router.get(
   returningTransactionCtrl.getPendingReturningTransactionsForDepartment
 );
 router.post("/transactions/returning/accept", hasValidToken, isPropertyAdminUser, returningTransactionCtrl.acceptReturnedItems);
+router.put("/transactions/returning/deny", hasValidToken, isPropertyAdminUser, returningTransactionCtrl.denyReturnedItems);
 
 export default router;

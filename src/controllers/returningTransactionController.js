@@ -212,10 +212,10 @@ const returningTransactionCtrl = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // itemsToBeReturned is a list of objects, with each object having {itemTypeId,subinventoryId,itemId,returningTransactionId}
+      // itemsToBeReturned is a an object with key returningTransactionId, value having [{subinventoryId,itemId}]
       // user and source will be be a single value for all items to be Returned
       const { itemsToBeReturned, user, department } = req.body;
-      if (!itemsToBeReturned || itemsToBeReturned.length === 0 || !user || !department) {
+      if (!itemsToBeReturned || !user || !department) {
         return res.sendStatus(400);
       }
 
@@ -226,66 +226,68 @@ const returningTransactionCtrl = {
 
       // iterating through each item found in items to be Returned
       // and checking if the itemId , subinventory id, returningTransactionId exists
-      for (let i = 0; i < itemsToBeReturned.length; i++) {
-        const item = itemsToBeReturned[i];
-        const { subinventoryId, itemId, returningTransactionId } = item;
-
-        if (!subinventoryId || !itemId || !returningTransactionId) {
-          return res.sendStatus(400);
-        }
+      for (const [returningTransactionId, value] of Object.entries(itemsToBeReturned)) {
         const returningTransaction = await ReturningTransactionCollection.findById(returningTransactionId);
         if (!returningTransaction)
           return res.status(404).json({
             msg: "No returning transaction found with the specified id.",
           });
-        const itemFromDb = await ItemCollection.findById(itemId);
-        if (!itemFromDb) return res.status(404).json({ msg: "No item found with the specified id." });
-        //checking if item exists and belongs to the specified department
-        if (itemFromDb.type == "Subinventory_Item" || itemFromDb.department != department) {
-          return res.status(400).json({
-            msg: "Item is not a department item / doesn't belong to the department",
+        for (let i = 0; i < value.length; i++) {
+          const { subinventoryId, itemId } = value[i];
+
+          if (!subinventoryId || !itemId || !returningTransactionId) {
+            return res.sendStatus(400);
+          }
+
+          const itemFromDb = await ItemCollection.findById(itemId);
+          if (!itemFromDb) return res.status(404).json({ msg: "No item found with the specified id." });
+          //checking if item exists and belongs to the specified department
+          if (itemFromDb.type == "Subinventory_Item" || itemFromDb.department != department) {
+            return res.status(400).json({
+              msg: "Item is not a department item / doesn't belong to the department",
+            });
+          }
+          let itemTypeId = itemFromDb.itemType;
+
+          const subinventory = await SubinventoryCollection.findById(subinventoryId);
+          if (!subinventory) return res.status(404).json({ msg: "No subinventory found with the specified id." });
+
+          // checking if array is there in the map with the key itemTypeId
+          // if not instantiate an empty one for the current itemTypeId
+          if (!mapOfItemTypeToItem[itemTypeId]) {
+            mapOfItemTypeToItem[itemTypeId] = [];
+          }
+          // adding to our map with key itemTypeId and value {unitCost, subinventoryId,itemId}
+          mapOfItemTypeToItem[itemTypeId].push({
+            itemId: itemId,
+            subinventoryId: subinventoryId,
+            unitCost: itemFromDb.price,
+          });
+          // changing the department item to be a subinventory item
+          await ItemCollection.replaceOne(
+            { _id: itemFromDb._id },
+            {
+              itemType: itemTypeId,
+              price: itemFromDb.price,
+              department,
+              type: "Subinventory_Item",
+              subinventory: subinventoryId,
+              createdAt: itemFromDb.createdAt,
+            },
+            { session: session }
+          );
+
+          //checking if the item is there in the returning transaction
+          const itemInReturningTransaction = returningTransaction.returnedItems.find((itemInArray) => itemInArray.item == itemId);
+          if (!itemInReturningTransaction) return res.status(400).json({ msg: "Item not found in the returning transaction" });
+          // updating the returningTransaction with the given itemId to approved
+          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
+            if (itemInMap.item == itemId) {
+              return { ...itemInMap, status: "approved", approvedBy: user };
+            }
+            return itemInMap;
           });
         }
-        let itemTypeId = itemFromDb.itemType;
-
-        const subinventory = await SubinventoryCollection.findById(subinventoryId);
-        if (!subinventory) return res.status(404).json({ msg: "No subinventory found with the specified id." });
-
-        // checking if array is there in the map with the key itemTypeId
-        // if not instantiate an empty one for the current itemTypeId
-        if (!mapOfItemTypeToItem[itemTypeId]) {
-          mapOfItemTypeToItem[itemTypeId] = [];
-        }
-        // adding to our map with key itemTypeId and value {unitCost, subinventoryId,itemId}
-        mapOfItemTypeToItem[itemTypeId].push({
-          itemId: itemId,
-          subinventoryId: subinventoryId,
-          unitCost: itemFromDb.price,
-        });
-        // changing the department item to be a subinventory item
-        await ItemCollection.replaceOne(
-          { _id: itemFromDb._id },
-          {
-            itemType: itemTypeId,
-            price: itemFromDb.price,
-            department,
-            type: "Subinventory_Item",
-            subinventory: subinventoryId,
-            createdAt: itemFromDb.createdAt,
-          },
-          { session: session }
-        );
-
-        //checking if the item is there in the returning transaction
-        const itemInReturningTransaction = returningTransaction.returnedItems.find((itemInArray) => itemInArray.item == itemId);
-        if (!itemInReturningTransaction) return res.status(400).json({ msg: "Item not found in the returning transaction" });
-        // updating the returningTransaction with the given itemId to approved
-        returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
-          if (itemInMap.item == itemId) {
-            return { ...itemInMap, status: "approved" };
-          }
-          return itemInMap;
-        });
         await returningTransaction.save({ session: session });
       }
       // checking if items with same itemType but different subinventory exist
@@ -344,6 +346,71 @@ const returningTransactionCtrl = {
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) returned successfully" });
+    } catch (err) {
+      // Rollback any changes made in the database
+      await session.abortTransaction();
+      return res.status(500).json({ msg: err.message });
+    } finally {
+      // Ending the session
+      session.endSession();
+    }
+  },
+  denyReturnedItems: async (req, res) => {
+    // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      // deniedItems is an object with key returningTransactionId, value having [itemId]
+      // user a single value for all items to be denied
+      const { deniedItems, user } = req.body;
+      if (!deniedItems || !user) {
+        return res.sendStatus(400);
+      }
+      for (const [returningTransactionId, value] of Object.entries(deniedItems)) {
+        const returningTransaction = await ReturningTransactionCollection.findById(returningTransactionId);
+        if (!returningTransaction)
+          return res.status(404).json({
+            msg: "No returning transaction found with the specified id.",
+          });
+        // iterating through each item found in items to be denied
+        for (let i = 0; i < value.length; i++) {
+          const itemId = value[i];
+
+          if (!itemId) {
+            return res.sendStatus(400);
+          }
+
+          const itemFromDb = await ItemCollection.findById(itemId);
+          if (!itemFromDb) return res.status(404).json({ msg: "No item found with the specified id." });
+          //checking if item is already a subinventory item
+          if (itemFromDb.type == "Subinventory_Item") {
+            return res.status(400).json({
+              msg: "Item is not a department item ",
+            });
+          }
+          itemFromDb.markedForReturn = false;
+          await itemFromDb.save({ session: session });
+
+          //checking if the item is there in the returning transaction
+          const itemInReturningTransaction = returningTransaction.returnedItems.find((itemInArray) => itemInArray.item == itemId);
+          if (!itemInReturningTransaction) return res.status(400).json({ msg: "Item not found in the returning transaction" });
+
+          if (itemInReturningTransaction.status == "approved")
+            return res.status(400).json({ msg: "Item is already approved. Can't deny." });
+          // updating the returningTransaction with the given itemId to approved
+          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
+            if (itemInMap.item == itemId) {
+              return { ...itemInMap, status: "denied", deniedBy: user };
+            }
+            return itemInMap;
+          });
+        }
+        await returningTransaction.save({ session: session });
+      }
+
+      // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
+      await session.commitTransaction();
+      return res.status(200).json({ msg: "Item(s) returns denied successfully" });
     } catch (err) {
       // Rollback any changes made in the database
       await session.abortTransaction();

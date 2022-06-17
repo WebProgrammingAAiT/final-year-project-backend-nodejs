@@ -13,6 +13,8 @@ router.get("/users/:id", hasValidToken, isAdmin, userCtrl.getUserById);
 router.put("/users/:emailOrUsername/changeRole", hasValidToken, isAdmin, userCtrl.changeUserRole);
 //admin changing another user's password
 router.put("/users/:emailOrUsername/changePassword", hasValidToken, isAdmin, userCtrl.changeUserPassword);
+//admin changing user's isAccountActive
+router.put("/users/:emailOrUsername/changeAccountActiveStatus", hasValidToken, isAdmin, userCtrl.changeAccountStatus);
 router.delete("/users/:emailOrUsername", hasValidToken, isAdmin, userCtrl.deleteUser);
 
 export default router;

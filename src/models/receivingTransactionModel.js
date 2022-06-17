@@ -6,6 +6,10 @@ const receivingTransactionSchema = mongoose.Schema(
     source: {
       type: String,
     },
+    isReturn: {
+      type: Boolean,
+      default: false,
+    },
     receivedItems: [
       {
         itemType: { type: mongoose.Schema.Types.ObjectId, ref: "Item_Type" },

@@ -77,7 +77,8 @@ const authCtrl = {
 
       const isCorrectPassword = await bcrypt.compare(password, user.password);
       if (!isCorrectPassword) return res.status(404).json({ msg: "Invalid Credentials, please try again." });
-
+      if (!user.isAccountActive)
+        return res.status(404).json({ msg: "Your account is not active, please contact your administrator." });
       const refreshToken = createRefreshToken({
         id: user._id,
         role: user.role,

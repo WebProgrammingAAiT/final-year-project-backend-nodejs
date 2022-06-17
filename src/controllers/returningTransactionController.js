@@ -326,6 +326,7 @@ const returningTransactionCtrl = {
           {
             receiptNumber: nanoid(),
             user,
+            isReturn: true,
             source: department,
             receivedItems: arrayOfReceivedItems,
           },

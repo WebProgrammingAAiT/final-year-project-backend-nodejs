@@ -1,7 +1,9 @@
 import DepartmentUserCollection from "../models/departmentUserModel.js";
 import UserCollection from "../models/userModel.js";
+import TransactionCollection from "../models/transactionModel.js";
 import bcrypt from "bcrypt";
 import smartContractInteraction from "./smartContractInteractionController.js";
+import mongoose from "mongoose";
 const userCtrl = {
   getUsers: async (req, res) => {
     try {
@@ -128,6 +130,25 @@ const userCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+  changeAccountStatus: async (req, res) => {
+    try {
+      const { emailOrUsername } = req.params;
+      const { isAccountActive } = req.body;
+      if (!emailOrUsername) return res.sendStatus(400);
+      if (typeof isAccountActive !== "boolean") return res.sendStatus(400);
+      const result = await UserCollection.findOneAndUpdate(
+        {
+          $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
+        },
+        { isAccountActive }
+      );
+      if (!result) return res.status(404).json({ msg: "User not found" });
+
+      return res.json({ msg: "User account active status changed successfully" });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
   searchForUsers: async (req, res) => {
     try {
       const searchTerm = req.query.searchTerm;
@@ -150,11 +171,45 @@ const userCtrl = {
     try {
       const { emailOrUsername } = req.params;
       if (!emailOrUsername) return res.sendStatus(400);
-      const user = await UserCollection.findOneAndDelete({
+      const user = await UserCollection.findOne({
         $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
       });
       if (!user) return res.status(404).json({ msg: "No user found" });
-      return res.status(200).json({ msg: "User deleted successfully" });
+      // check if a tx belongs to a user. If there is one deactivate the account
+      const txBelongingToUser = await TransactionCollection.aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                user: mongoose.Types.ObjectId(user._id),
+              },
+              {
+                "returnedItems.deniedBy": mongoose.Types.ObjectId(user._id),
+              },
+              {
+                "returnedItems.approvedBy": mongoose.Types.ObjectId(user._id),
+              },
+              {
+                "requestedItems.approvedBy": mongoose.Types.ObjectId(user._id),
+              },
+              {
+                "requestedItems.deniedBy": mongoose.Types.ObjectId(user._id),
+              },
+            ],
+          },
+        },
+        {
+          $limit: 1,
+        },
+      ]);
+      if (txBelongingToUser.length > 0) {
+        user.isAccountActive = false;
+        await user.save();
+        return res.status(200).json({ msg: "User deactivated successfully" });
+      } else {
+        await user.delete();
+        return res.status(200).json({ msg: "User deleted successfully" });
+      }
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

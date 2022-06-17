@@ -19,12 +19,15 @@ const userSchema = mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "propertyAdminUser","departmentUser"],
+      enum: ["admin", "propertyAdminUser", "departmentUser"],
       default: "departmentUser",
     },
-    
+    isAccountActive: {
+      type: Boolean,
+      default: true,
+    },
   },
-  { timestamps: true,discriminatorKey: "type" }
+  { timestamps: true, discriminatorKey: "type" }
 );
 
 export default mongoose.model("User", userSchema);

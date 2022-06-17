@@ -127,13 +127,27 @@ const inquiryCtrl = {
         return res.sendStatus(400);
       }
 
-      const items = await ReceivingTransactionCollection.aggregate([
+      const receivedItems = await ReceivingTransactionCollection.aggregate([
+        {
+          // useful to set the default of isReturn to false
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                {
+                  isReturn: false,
+                },
+                "$$ROOT",
+              ],
+            },
+          },
+        },
         {
           $match: {
             createdAt: {
               $gte: new Date(startDate),
               $lte: new Date(endDate),
             },
+            isReturn: false,
           },
         },
         {
@@ -179,12 +193,82 @@ const inquiryCtrl = {
           },
         },
       ]);
-      await ItemTypeCollection.populate(items, {
+      const receivedItemsFromDepartments = await ReceivingTransactionCollection.aggregate([
+        {
+          // useful to set the default of isReturn to false
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                {
+                  isReturn: false,
+                },
+                "$$ROOT",
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(startDate),
+              $lte: new Date(endDate),
+            },
+            isReturn: true,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            receivedItems: {
+              $filter: {
+                input: "$receivedItems",
+                as: "receivedItems",
+                cond: {
+                  $eq: ["$$receivedItems.subinventory", mongoose.Types.ObjectId(subinventory)],
+                },
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            $expr: {
+              $gt: [
+                {
+                  $size: "$receivedItems",
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            receivedItems: 1,
+          },
+        },
+        {
+          $unwind: {
+            path: "$receivedItems",
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: "$receivedItems",
+          },
+        },
+      ]);
+      await ItemTypeCollection.populate(receivedItems, {
+        path: "itemType",
+        select: "name itemCode",
+      });
+      await ItemTypeCollection.populate(receivedItemsFromDepartments, {
         path: "itemType",
         select: "name itemCode",
       });
 
-      return res.status(200).json({ items });
+      return res.status(200).json({ receivedItems, receivedItemsFromDepartments });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

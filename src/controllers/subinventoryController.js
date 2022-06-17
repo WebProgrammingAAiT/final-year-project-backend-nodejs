@@ -3,10 +3,17 @@ import SubinventoryCollection from "../models/subinventoryModel.js";
 const subinventoryCtrl = {
   addSubinventory: async (req, res) => {
     try {
-    const { name } = req.body;
-    if (!name) {
-      return res.sendStatus(400);
-    }   
+      const { name } = req.body;
+      if (!name) {
+        return res.sendStatus(400);
+      }
+      let subinventory = await SubinventoryCollection.findOne({
+        name,
+      });
+      if (subinventory)
+        return res
+          .status(400)
+          .json({ msg: "Subinventory with the specified name already exists. Please try again with a new name." });
       await SubinventoryCollection.create({
         name,
       });
@@ -18,7 +25,6 @@ const subinventoryCtrl = {
   },
   getSubinventories: async (req, res) => {
     try {
-      
       const subinventories = await SubinventoryCollection.find();
       return res.status(200).json({ subinventories });
     } catch (err) {
@@ -32,8 +38,7 @@ const subinventoryCtrl = {
         return res.sendStatus(400);
       }
       const subinventory = await SubinventoryCollection.findById(id);
-      if (!subinventory)
-        return res.status(404).json({ msg: "No subinventory found." });
+      if (!subinventory) return res.status(404).json({ msg: "No subinventory found." });
 
       return res.status(200).json({ subinventory });
     } catch (err) {

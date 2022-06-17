@@ -8,11 +8,16 @@ const itemTypeCtrl = {
         return res.sendStatus(400);
       }
       if (itemCode.length < 4) {
-        return res
-          .status(400)
-          .json({ msg: "Item Code must be at least 4 characters long" });
+        return res.status(400).json({ msg: "Item Code must be at least 4 characters long" });
       }
-
+      let itemType = await ItemTypeCollection.findOne({
+        name
+      });
+      if(itemType) return res.status(400).json({ msg: "Item Type with the specified name already exists. Please try again with a new name." });
+      itemType = await ItemTypeCollection.findOne({
+        itemCode,
+      });
+      if(itemType) return res.status(400).json({ msg: "Item Type with the specified code already exists. Please try again with a new code." });
       await ItemTypeCollection.create({
         name,
         itemCode,
@@ -71,9 +76,7 @@ const itemTypeCtrl = {
         return res.sendStatus(400);
       }
       if (itemCode.length < 4) {
-        return res
-          .status(400)
-          .json({ msg: "Item Code must be at least 4 characters long" });
+        return res.status(400).json({ msg: "Item Code must be at least 4 characters long" });
       }
       const result = await ItemTypeCollection.findByIdAndUpdate(id, {
         name,

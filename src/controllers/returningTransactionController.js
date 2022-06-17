@@ -212,32 +212,32 @@ const returningTransactionCtrl = {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // itemsToBeReturned is a list of objects, with each object having {itemTypeId,subinventoryId,itemId}
+      // itemsToBeReturned is a list of objects, with each object having {itemTypeId,subinventoryId,itemId,returningTransactionId}
       // user and source will be be a single value for all items to be Returned
-      const { itemsToBeReturned, user, department, returningTransactionId } = req.body;
-      if (!itemsToBeReturned || itemsToBeReturned.length === 0 || !user || !department || !returningTransactionId) {
+      const { itemsToBeReturned, user, department } = req.body;
+      if (!itemsToBeReturned || itemsToBeReturned.length === 0 || !user || !department) {
         return res.sendStatus(400);
       }
 
-      const returningTransaction = await ReturningTransactionCollection.findById(returningTransactionId);
-      if (!returningTransaction)
-        return res.status(404).json({
-          msg: "No returning transaction found with the specified id.",
-        });
       const departmentInDB = await DepartmentCollection.findById(department);
       if (!departmentInDB) return res.status(404).json({ msg: "No department found with the specified id." });
 
       let mapOfItemTypeToItem = {};
 
       // iterating through each item found in items to be Returned
-      // and checking if the itemId , subinventory id exists
+      // and checking if the itemId , subinventory id, returningTransactionId exists
       for (let i = 0; i < itemsToBeReturned.length; i++) {
         const item = itemsToBeReturned[i];
-        const { subinventoryId, itemId } = item;
+        const { subinventoryId, itemId, returningTransactionId } = item;
 
-        if (!subinventoryId || !itemId) {
+        if (!subinventoryId || !itemId || !returningTransactionId) {
           return res.sendStatus(400);
         }
+        const returningTransaction = await ReturningTransactionCollection.findById(returningTransactionId);
+        if (!returningTransaction)
+          return res.status(404).json({
+            msg: "No returning transaction found with the specified id.",
+          });
         const itemFromDb = await ItemCollection.findById(itemId);
         if (!itemFromDb) return res.status(404).json({ msg: "No item found with the specified id." });
         //checking if item exists and belongs to the specified department
@@ -275,6 +275,10 @@ const returningTransactionCtrl = {
           },
           { session: session }
         );
+
+        //checking if the item is there in the returning transaction
+        const itemInReturningTransaction = returningTransaction.returnedItems.find((itemInArray) => itemInArray.item == itemId);
+        if (!itemInReturningTransaction) return res.status(400).json({ msg: "Item not found in the returning transaction" });
         // updating the returningTransaction with the given itemId to approved
         returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
           if (itemInMap.item == itemId) {

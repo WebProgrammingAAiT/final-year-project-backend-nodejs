@@ -8,5 +8,6 @@ router.get("/inquiries/onHand", hasValidToken, isPropertyAdminUser, inquiryCtrl.
 router.get("/inquiries/trackItem", hasValidToken, isPropertyAdminUser, inquiryCtrl.trackItem);
 router.get("/inquiries/stockInquiry/detail", hasValidToken, isPropertyAdminUser, inquiryCtrl.stockInquiryDetail);
 router.get("/inquiries/stockInquiry/general", hasValidToken, isPropertyAdminUser, inquiryCtrl.stockInquiryGeneral);
+router.get("/inquiries/report", hasValidToken, isPropertyAdminUser, inquiryCtrl.report);
 
 export default router;

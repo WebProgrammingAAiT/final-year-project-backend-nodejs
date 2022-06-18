@@ -72,10 +72,15 @@ const departmentCtrl = {
       if (!id) {
         return res.sendStatus(400);
       }
-      const result = await DepartmentCollection.findByIdAndDelete(id);
-      if (!result) {
+      const department = await DepartmentCollection.findById(id);
+      if (!department) {
         return res.status(404).json({ msg: "No department found." });
       }
+      const itemBelongingToDepartment = await DepartmentItemCollection.findOne({ department: id });
+      if (itemBelongingToDepartment) return res.status(400).json({ msg: "Department has items assigned to it." });
+
+      await DepartmentCollection.findByIdAndDelete(id);
+
       return res.json({
         msg: "Department deleted successfully",
       });

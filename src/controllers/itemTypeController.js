@@ -1,4 +1,5 @@
 import ItemTypeCollection from "../models/itemTypeModel.js";
+import ItemCollection from "../models/itemModel.js";
 
 const itemTypeCtrl = {
   addItemType: async (req, res) => {
@@ -11,13 +12,19 @@ const itemTypeCtrl = {
         return res.status(400).json({ msg: "Item Code must be at least 4 characters long" });
       }
       let itemType = await ItemTypeCollection.findOne({
-        name
+        name,
       });
-      if(itemType) return res.status(400).json({ msg: "Item Type with the specified name already exists. Please try again with a new name." });
+      if (itemType)
+        return res
+          .status(400)
+          .json({ msg: "Item Type with the specified name already exists. Please try again with a new name." });
       itemType = await ItemTypeCollection.findOne({
         itemCode,
       });
-      if(itemType) return res.status(400).json({ msg: "Item Type with the specified code already exists. Please try again with a new code." });
+      if (itemType)
+        return res
+          .status(400)
+          .json({ msg: "Item Type with the specified code already exists. Please try again with a new code." });
       await ItemTypeCollection.create({
         name,
         itemCode,
@@ -98,10 +105,14 @@ const itemTypeCtrl = {
       if (!id) {
         return res.sendStatus(400);
       }
-      const result = await ItemTypeCollection.findByIdAndDelete(id);
-      if (!result) {
+      const itemType = await ItemTypeCollection.findById(id);
+      if (!itemType) {
         return res.status(404).json({ msg: "No ItemType found." });
       }
+      const itemBelongingToItemType = await ItemCollection.findOne({ itemType: id });
+      if (itemBelongingToItemType) return res.status(400).json({ msg: "Item Type is currently being used by an item." });
+
+      await ItemTypeCollection.findByIdAndDelete(id);
       return res.json({
         msg: "ItemType deleted successfully",
       });

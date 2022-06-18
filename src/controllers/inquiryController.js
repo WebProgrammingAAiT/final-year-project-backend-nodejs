@@ -437,6 +437,190 @@ const inquiryCtrl = {
       return res.status(500).json({ msg: err.message });
     }
   },
+
+  report: async (req, res) => {
+    try {
+      const receivedItems = await ReceivingTransactionCollection.aggregate([
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                {
+                  isReturn: false,
+                },
+                "$$ROOT",
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            type: "Receiving_Transaction",
+            isReturn: false,
+          },
+        },
+        {
+          $unwind: {
+            path: "$receivedItems",
+          },
+        },
+        {
+          $group: {
+            _id: "$receivedItems.itemType",
+            quantity: {
+              $sum: "$receivedItems.quantity",
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "item_types",
+            localField: "_id",
+            foreignField: "_id",
+            as: "itemType",
+          },
+        },
+        {
+          $unwind: {
+            path: "$itemType",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            quantity: 1,
+            name: "$itemType.name",
+            itemCode: "$itemType.itemCode",
+          },
+        },
+        { $sort: { quantity: -1 } },
+      ]);
+
+      const transferredItems = await TransactionCollection.aggregate([
+        {
+          $match: {
+            type: "Transferring_Transaction",
+          },
+        },
+        {
+          $group: {
+            _id: "$transferredItems.itemType",
+            quantity: {
+              $sum: "$transferredItems.quantity",
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "item_types",
+            localField: "_id",
+            foreignField: "_id",
+            as: "itemType",
+          },
+        },
+        {
+          $unwind: {
+            path: "$itemType",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            quantity: 1,
+            name: "$itemType.name",
+            itemCode: "$itemType.itemCode",
+          },
+        },
+      ]);
+
+      const returnedItems = await ReceivingTransactionCollection.aggregate([
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                {
+                  isReturn: false,
+                },
+                "$$ROOT",
+              ],
+            },
+          },
+        },
+        {
+          $match: {
+            type: "Receiving_Transaction",
+            isReturn: true,
+          },
+        },
+        {
+          $unwind: {
+            path: "$receivedItems",
+          },
+        },
+        {
+          $group: {
+            _id: "$receivedItems.itemType",
+            quantity: {
+              $sum: "$receivedItems.quantity",
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "item_types",
+            localField: "_id",
+            foreignField: "_id",
+            as: "itemType",
+          },
+        },
+        {
+          $unwind: {
+            path: "$itemType",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            quantity: 1,
+            name: "$itemType.name",
+            itemCode: "$itemType.itemCode",
+          },
+        },
+      ]);
+      let mapOfItemTypeIdToQuantity = {};
+
+      for (let i = 0; i < receivedItems.length; i++) {
+        const item = receivedItems[i];
+        if (!mapOfItemTypeIdToQuantity[item._id]) {
+          mapOfItemTypeIdToQuantity[item._id] = {};
+        }
+        mapOfItemTypeIdToQuantity[item._id].receivedQuantity = item.quantity;
+        mapOfItemTypeIdToQuantity[item._id].name = item.name;
+        mapOfItemTypeIdToQuantity[item._id].itemCode = item.itemCode;
+      }
+      for (let i = 0; i < transferredItems.length; i++) {
+        const item = transferredItems[i];
+        if (!mapOfItemTypeIdToQuantity[item._id]) {
+          mapOfItemTypeIdToQuantity[item._id] = {};
+        }
+        mapOfItemTypeIdToQuantity[item._id].transferredQuantity = item.quantity;
+        mapOfItemTypeIdToQuantity[item._id].name = item.name;
+        mapOfItemTypeIdToQuantity[item._id].itemCode = item.itemCode;
+      }
+      for (let i = 0; i < returnedItems.length; i++) {
+        const item = returnedItems[i];
+        if (!mapOfItemTypeIdToQuantity[item._id]) {
+          mapOfItemTypeIdToQuantity[item._id] = {};
+        }
+        mapOfItemTypeIdToQuantity[item._id].returnedQuantity = item.quantity;
+        mapOfItemTypeIdToQuantity[item._id].name = item.name;
+        mapOfItemTypeIdToQuantity[item._id].itemCode = item.itemCode;
+      }
+      return res.status(200).json({ mapOfItemTypeIdToQuantity });
+    } catch (error) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
 };
 
 export default inquiryCtrl;

@@ -1,4 +1,5 @@
 import SubinventoryCollection from "../models/subinventoryModel.js";
+import SubinventoryItemCollection from "../models/subinventoryItemModel.js";
 
 const subinventoryCtrl = {
   addSubinventory: async (req, res) => {
@@ -72,10 +73,15 @@ const subinventoryCtrl = {
       if (!id) {
         return res.sendStatus(400);
       }
-      const result = await SubinventoryCollection.findByIdAndDelete(id);
-      if (!result) {
+      const subinventory = await SubinventoryCollection.findById(id);
+      if (!subinventory) {
         return res.status(404).json({ msg: "No subinventory found." });
       }
+      const itemBelongingToSubinventory = await SubinventoryItemCollection.findOne({ subinventory: id });
+      if (itemBelongingToSubinventory) return res.status(400).json({ msg: "Subinventory is currently being used by an item." });
+
+      await SubinventoryCollection.findByIdAndDelete(id);
+
       return res.json({
         msg: "Subinventory deleted successfully",
       });

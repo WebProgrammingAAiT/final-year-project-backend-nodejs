@@ -75,6 +75,39 @@ const transactionCtrl = {
     try {
       let now = new Date();
       let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recentTransactions = await TransactionCollection.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        {
+          $unwind: {
+            path: "$user",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            type: 1,
+            receiptNumber: 1,
+            "user.username": 1,
+            createdAt: 1,
+          },
+        },
+        {
+          $sort: {
+            createdAt: -1,
+          },
+        },
+        {
+          $limit: 5,
+        },
+      ]);
+
       const pendingReturningTransactionsGroupedByDepartments = await ReturningTransactionCollection.aggregate([
         {
           $match: {
@@ -265,6 +298,7 @@ const transactionCtrl = {
         numberOfRequestedTransactionsToday: numberOfRequestedTransactionsToday,
         pendingReturningTransactionsGroupedByDepartments,
         pendingRequestingTransactions,
+        recentTransactions,
       });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

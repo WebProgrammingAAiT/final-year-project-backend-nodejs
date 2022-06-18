@@ -83,10 +83,11 @@ const transferringTransactionCtrl = {
         );
         itemsToBeTransferred.push(item._id);
       }
-
+      let indexOfItemToHaveStatusChanged = 0;
       // updating the requestingTransaction with the given itemType to approved
-      requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item) => {
+      requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item, index) => {
         if (item.itemType == itemTypeId) {
+          indexOfItemToHaveStatusChanged = index;
           if (remark) {
             remark = `Approved: ${quantity}. ${remark}`;
           } else {
@@ -123,6 +124,15 @@ const transferringTransactionCtrl = {
       //not populated document (useful for hashing)
 
       let tNormal = await TransferringTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      await smartContractInteraction.updateStatus(
+        requestingTransactionId,
+        "Requesting_Transaction",
+        indexOfItemToHaveStatusChanged,
+        "approved",
+        remark,
+        user,
+        tNormal.updatedAt
+      );
       await smartContractInteraction.createTransferringTransaction(tPopulated, tNormal);
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
@@ -164,15 +174,25 @@ const transferringTransactionCtrl = {
       if (itemTypeInRequestingTransaction.status !== "pending") {
         return res.status(400).json({ msg: "Item request has already been approved or denied" });
       }
-
+      let indexOfItemToHaveStatusChanged = 0;
       // updating the requestingTransaction with the given itemType to denied
-      requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item) => {
+      requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item, index) => {
         if (item.itemType == itemTypeId) {
+          indexOfItemToHaveStatusChanged = index;
           return { ...item, status: "denied", resolvedBy: user };
         }
         return item;
       });
       await requestingTransaction.save({ session: session });
+      await smartContractInteraction.updateStatus(
+        requestingTransactionId,
+        "Requesting_Transaction",
+        indexOfItemToHaveStatusChanged,
+        "denied",
+        "",
+        user,
+        requestingTransaction.updatedAt
+      );
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item request denied successfully" });

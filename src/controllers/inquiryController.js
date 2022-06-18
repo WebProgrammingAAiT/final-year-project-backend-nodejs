@@ -616,6 +616,14 @@ const inquiryCtrl = {
         mapOfItemTypeIdToQuantity[item._id].name = item.name;
         mapOfItemTypeIdToQuantity[item._id].itemCode = item.itemCode;
       }
+
+      Object.keys(mapOfItemTypeIdToQuantity).map((key) => {
+        let receivedQuantity = mapOfItemTypeIdToQuantity[key].receivedQuantity ?? 0;
+        let transferredQuantity = mapOfItemTypeIdToQuantity[key].transferredQuantity ?? 0;
+        let returnedQuantity = mapOfItemTypeIdToQuantity[key].returnedQuantity ?? 0;
+        mapOfItemTypeIdToQuantity[key].onHand = receivedQuantity - transferredQuantity + returnedQuantity;
+      });
+
       return res.status(200).json({ mapOfItemTypeIdToQuantity });
     } catch (error) {
       return res.status(500).json({ msg: err.message });

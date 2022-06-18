@@ -289,6 +289,15 @@ const returningTransactionCtrl = {
           });
         }
         await returningTransaction.save({ session: session });
+        await smartContractInteraction.updateStatus(
+          returningTransactionId,
+          "Returning_Transaction",
+          indexOfItemToHaveStatusChanged,
+          "denied",
+          "",
+          user,
+          requestingTransaction.updatedAt
+        );
       }
       // checking if items with same itemType but different subinventory exist
       for (let m in mapOfItemTypeToItem) {

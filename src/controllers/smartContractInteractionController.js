@@ -29,7 +29,7 @@ const smartContractInteraction = {
     let itemsOfInterest = [];
     let newItems = [];
     let id = receivingTransaction._id;
-    let { receiptNumber, user, source } = receivingTransaction;
+    let { isReturn, receiptNumber, user, source, createdAt, updatedAt } = receivingTransaction;
 
     for (let i = 0; i < receivingTransaction.receivedItems.length; i++) {
       let receivedItem = receivingTransaction.receivedItems[i];
@@ -49,18 +49,22 @@ const smartContractInteraction = {
       ]);
       newItems.push(receivedItem.items);
     }
-
+    //removing updated at field from data hash as it can change
+    delete receivingTransactionNormal.updatedAt;
     let dataHash = hash(receivingTransactionNormal);
 
     const tx = await auditTrailContract.createReceivingTransaction(
       dataHash,
       id,
+      isReturn.toString(),
       source,
       receiptNumber,
       user,
       "Receiving_Transaction",
       itemsOfInterest,
-      newItems
+      newItems,
+      createdAt,
+      updatedAt
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
@@ -70,16 +74,22 @@ const smartContractInteraction = {
 
     let itemsOfInterest = [];
     let id = requestingTransaction._id;
-    let { receiptNumber, user, department, requiredDate } = requestingTransaction;
+    let { receiptNumber, user, department, requiredDate, createdAt, updatedAt } = requestingTransaction;
     let departmentId = department._id;
     let departmentName = department.name;
+
     for (let i = 0; i < requestingTransaction.requestedItems.length; i++) {
       let requestedItem = requestingTransaction.requestedItems[i];
       let { itemType, status, quantity, _id: objId } = requestedItem;
       let itemTypeId = itemType._id;
       let itemTypeName = itemType.name;
-      itemsOfInterest.push([objId, itemTypeId, itemTypeName, status, quantity.toString()]);
+      // the empty strings are for resolvedBy and remarks
+      itemsOfInterest.push([objId, itemTypeId, itemTypeName, status, "", "", quantity.toString()]);
+      //removing status so as to not include it in the hash
+      delete requestingTransactionNormal.requestedItems[i].status;
     }
+    //removing updated at field from data hash as it can change
+    delete requestingTransactionNormal.updatedAt;
     let dataHash = hash(requestingTransactionNormal);
 
     const tx = await auditTrailContract.createRequestingTransaction(
@@ -91,9 +101,22 @@ const smartContractInteraction = {
       receiptNumber,
       user,
       "Requesting_Transaction",
-      itemsOfInterest
+      itemsOfInterest,
+      createdAt,
+      updatedAt
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
+  },
+  updateStatus: async (txId, transactionType, index, status, remark, resolvedBy, updatedAt) => {
+    await auditTrailContract.updateStatus(
+      txId,
+      transactionType,
+      index.toString(),
+      status,
+      remark,
+      resolvedBy.toString(),
+      JSON.parse(JSON.stringify(updatedAt))
+    );
   },
   createTransferringTransaction: async (transactionPopulated, transactionNormal) => {
     let transferringTransactionNormal = JSON.parse(JSON.stringify(transactionNormal));
@@ -106,10 +129,11 @@ const smartContractInteraction = {
     let newItems = transferringTransaction.transferredItems.items;
 
     let id = transferringTransaction._id;
-    let { requestingTransaction, department, receiptNumber, user } = transferringTransaction;
+    let { requestingTransaction, department, receiptNumber, user, createdAt, updatedAt } = transferringTransaction;
     let departmentId = department._id;
     let departmentName = department.name;
-
+    //removing updated at field from data hash as it can change
+    delete transferringTransactionNormal.updatedAt;
     let dataHash = hash(transferringTransactionNormal);
 
     const tx = await auditTrailContract.createTransferringTransaction(
@@ -122,7 +146,9 @@ const smartContractInteraction = {
       user,
       "Transferring_Transaction",
       itemsOfInterest,
-      newItems
+      newItems,
+      createdAt,
+      updatedAt
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },
@@ -132,7 +158,7 @@ const smartContractInteraction = {
     let itemsOfInterest = [];
 
     let id = returningTransaction._id;
-    let { receiptNumber, user, department, returnedDate } = returningTransaction;
+    let { receiptNumber, user, department, returnedDate, createdAt, updatedAt } = returningTransaction;
     let departmentId = department._id;
     let departmentName = department.name;
 
@@ -141,8 +167,13 @@ const smartContractInteraction = {
       let { item, itemType, status, _id: objId } = returnedItem;
       let itemTypeId = itemType._id;
       let itemTypeName = itemType.name;
-      itemsOfInterest.push([objId, item, itemTypeId, itemTypeName, status]);
+      // the empty string is for resolvedBy
+      itemsOfInterest.push([objId, item, itemTypeId, itemTypeName, status, ""]);
+      //removing status so as to not include it in the hash
+      delete returningTransactionNormal.returnedItems[i].status;
     }
+    //removing updated at field from data hash as it can change
+    delete returningTransactionNormal.updatedAt;
     let dataHash = hash(returningTransactionNormal);
 
     const tx = await auditTrailContract.createReturningTransaction(
@@ -154,7 +185,9 @@ const smartContractInteraction = {
       receiptNumber,
       user,
       "Returning_Transaction",
-      itemsOfInterest
+      itemsOfInterest,
+      createdAt,
+      updatedAt
     );
     await BlockchainTransactionCollection.create({ ethereumTxId: tx.hash, transactionId: id });
   },

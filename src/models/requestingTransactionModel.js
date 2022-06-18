@@ -18,16 +18,18 @@ const requestingTransactionSchema = mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ["pending", "approved"],
+          enum: ["pending", "approved", "denied"],
           default: "pending",
         },
+        resolvedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        remark: String,
       },
     ],
   },
   { discriminatorKey: "type" }
 );
 
-export default TransactionCollection.discriminator(
-  "Requesting_Transaction",
-  requestingTransactionSchema
-);
+export default TransactionCollection.discriminator("Requesting_Transaction", requestingTransactionSchema);

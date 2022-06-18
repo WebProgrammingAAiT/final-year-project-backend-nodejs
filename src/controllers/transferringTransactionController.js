@@ -18,6 +18,7 @@ const transferringTransactionCtrl = {
     session.startTransaction();
     try {
       const { requestingTransactionId, itemTypeId, quantity, user, department } = req.body;
+      let { remark } = req.body;
       if (!requestingTransactionId || !itemTypeId || !quantity || !user || !department) {
         return res.sendStatus(400);
       }
@@ -35,6 +36,22 @@ const transferringTransactionCtrl = {
       //checking if the itemType exists
       const itemType = await ItemTypeCollection.findById(itemTypeId);
       if (!itemType) return res.status(404).json({ msg: "No itemType found with the specified id." });
+
+      //checking if the itemTypeId is there in the requesting transaction
+      const itemTypeInRequestingTransaction = requestingTransaction.requestedItems.find(
+        (itemTypeInArray) => itemTypeInArray.itemType == itemTypeId
+      );
+      if (!itemTypeInRequestingTransaction)
+        return res.status(400).json({ msg: "Item Type not found in the requesting transaction" });
+      if (itemTypeInRequestingTransaction.status !== "pending") {
+        return res.status(400).json({ msg: "Item request has already been approved or denied" });
+      }
+      if (itemTypeInRequestingTransaction.quantity < quantity) {
+        return res.status(400).json({ msg: "Quantity specified is greater than the requested amount." });
+      }
+      if (itemTypeInRequestingTransaction.quantity > quantity && !remark) {
+        return res.status(400).json({ msg: "Please specify a remark as to why the quantity is less than requested amount." });
+      }
 
       //checking first if the quantity specified is available in the db first
       const itemsInSubinventory = await SubinventoryItemCollection.find({
@@ -70,7 +87,12 @@ const transferringTransactionCtrl = {
       // updating the requestingTransaction with the given itemType to approved
       requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item) => {
         if (item.itemType == itemTypeId) {
-          return { ...item, status: "approved" };
+          if (remark) {
+            remark = `Approved: ${quantity}. ${remark}`;
+          } else {
+            remark = `Approved: ${quantity}`;
+          }
+          return { ...item, status: "approved", resolvedBy: user, remark };
         }
         return item;
       });
@@ -105,6 +127,55 @@ const transferringTransactionCtrl = {
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) added to department successfully" });
+    } catch (err) {
+      // Rollback any changes made in the database
+      await session.abortTransaction();
+      return res.status(500).json({ msg: err.message });
+    } finally {
+      // Ending the session
+      session.endSession();
+    }
+  },
+  denyTransfer: async (req, res) => {
+    // instantiating a session so that if any of the queries fail, the entire transaction will be rolled back
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const { requestingTransactionId, itemTypeId, user } = req.body;
+      if (!requestingTransactionId || !itemTypeId || !user) {
+        return res.sendStatus(400);
+      }
+
+      const requestingTransaction = await RequestingTransactionCollection.findById(requestingTransactionId);
+      if (!requestingTransaction)
+        return res.status(404).json({
+          msg: "No requesting transaction found with the specified id.",
+        });
+
+      //checking if the itemType exists
+      const itemType = await ItemTypeCollection.findById(itemTypeId);
+      if (!itemType) return res.status(404).json({ msg: "No itemType found with the specified id." });
+      //checking if the itemTypeId is there in the requesting transaction
+      const itemTypeInRequestingTransaction = requestingTransaction.requestedItems.find(
+        (itemTypeInArray) => itemTypeInArray.itemType == itemTypeId
+      );
+      if (!itemTypeInRequestingTransaction)
+        return res.status(400).json({ msg: "Item Type not found in the requesting transaction" });
+      if (itemTypeInRequestingTransaction.status !== "pending") {
+        return res.status(400).json({ msg: "Item request has already been approved or denied" });
+      }
+
+      // updating the requestingTransaction with the given itemType to denied
+      requestingTransaction.requestedItems = requestingTransaction.requestedItems.map((item) => {
+        if (item.itemType == itemTypeId) {
+          return { ...item, status: "denied", resolvedBy: user };
+        }
+        return item;
+      });
+      await requestingTransaction.save({ session: session });
+      // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
+      await session.commitTransaction();
+      return res.status(200).json({ msg: "Item request denied successfully" });
     } catch (err) {
       // Rollback any changes made in the database
       await session.abortTransaction();

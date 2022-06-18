@@ -283,7 +283,7 @@ const returningTransactionCtrl = {
           // updating the returningTransaction with the given itemId to approved
           returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
             if (itemInMap.item == itemId) {
-              return { ...itemInMap, status: "approved", approvedBy: user };
+              return { ...itemInMap, status: "approved", resolvedBy: user };
             }
             return itemInMap;
           });
@@ -401,7 +401,7 @@ const returningTransactionCtrl = {
           // updating the returningTransaction with the given itemId to approved
           returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
             if (itemInMap.item == itemId) {
-              return { ...itemInMap, status: "denied", deniedBy: user };
+              return { ...itemInMap, status: "denied", resolvedBy: user };
             }
             return itemInMap;
           });

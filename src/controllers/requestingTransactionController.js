@@ -58,9 +58,15 @@ const requestingTransactionCtrl = {
           });
         }
         // adding to our map with key itemTypeId and value {quantity}
-        mapOfItemTypeToItem[itemTypeId] = {
-          quantity,
-        };
+        if (mapOfItemTypeToItem[itemTypeId]) {
+          mapOfItemTypeToItem[itemTypeId] = {
+            quantity: mapOfItemTypeToItem[itemTypeId].quantity + quantity,
+          };
+        } else {
+          mapOfItemTypeToItem[itemTypeId] = {
+            quantity,
+          };
+        }
       }
       // useful for setting the requesting transaction data
       let arrayOfRequestedItems = [];

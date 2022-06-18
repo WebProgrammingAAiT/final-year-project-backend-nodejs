@@ -22,11 +22,7 @@ const returningTransactionSchema = mongoose.Schema(
           enum: ["pending", "approved", "denied"],
           default: "pending",
         },
-        approvedBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        deniedBy: {
+        resolvedBy: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
         },

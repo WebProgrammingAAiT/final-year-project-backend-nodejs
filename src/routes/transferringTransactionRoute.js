@@ -5,5 +5,6 @@ import { hasValidToken, isPropertyAdminUser } from "../middleware/authMiddleware
 const router = express.Router();
 
 router.post("/transactions/transferring", hasValidToken, isPropertyAdminUser, transferringTransactionCtrl.transferItems);
+router.put("/transactions/denyTransfer", hasValidToken, isPropertyAdminUser, transferringTransactionCtrl.denyTransfer);
 
 export default router;

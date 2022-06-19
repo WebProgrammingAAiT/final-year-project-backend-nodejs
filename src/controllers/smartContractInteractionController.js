@@ -257,14 +257,27 @@ const smartContractInteraction = {
         receiptNumber,
         transactionType,
         requestedItems: requestedItemsFromBlockchain,
+        createdAt,
+        updatedAt,
       } = request;
       let requestedItems = [];
       for (let i = 0; i < requestedItemsFromBlockchain.length; i++) {
         let requestedItem = requestedItemsFromBlockchain[i];
-        let { id, itemTypeId, itemTypeName, quantity, status } = requestedItem;
-        requestedItems.push({ id, itemTypeId, itemTypeName, quantity, status });
+        let { id, itemTypeId, itemTypeName, quantity, status, resolvedBy, remark } = requestedItem;
+        requestedItems.push({ id, itemTypeId, itemTypeName, quantity, status, resolvedBy, remark });
       }
-      let transaction = { id, user, departmentId, departmentName, requiredDate, receiptNumber, transactionType, requestedItems };
+      let transaction = {
+        id,
+        user,
+        departmentId,
+        departmentName,
+        requiredDate,
+        receiptNumber,
+        transactionType,
+        requestedItems,
+        createdAt,
+        updatedAt,
+      };
       return transaction;
     } else if (type == "Transferring_Transaction") {
       const transfer = await auditTrailContract.getTransferTransaction(transactionId);
@@ -277,6 +290,8 @@ const smartContractInteraction = {
         receiptNumber,
         transactionType,
         transferredItems: transferredItemsFromBlockchain,
+        createdAt,
+        updatedAt,
       } = transfer;
 
       let { itemTypeId, itemTypeName, quantity, items } = transferredItemsFromBlockchain;
@@ -291,6 +306,8 @@ const smartContractInteraction = {
         receiptNumber,
         transactionType,
         transferredItems,
+        createdAt,
+        updatedAt,
       };
       return transaction;
     } else {
@@ -304,6 +321,8 @@ const smartContractInteraction = {
         receiptNumber,
         transactionType,
         returnedItems: returnedItemsFromBlockchain,
+        createdAt,
+        updatedAt,
       } = returned;
       let returnedItems = [];
       for (let i = 0; i < returnedItemsFromBlockchain.length; i++) {
@@ -311,7 +330,18 @@ const smartContractInteraction = {
         let { id, item, itemTypeId, itemTypeName, status } = returnedItem;
         returnedItems.push({ id, item, itemTypeId, itemTypeName, status });
       }
-      let transaction = { id, departmentId, departmentName, user, returnedDate, receiptNumber, transactionType, returnedItems };
+      let transaction = {
+        id,
+        departmentId,
+        departmentName,
+        user,
+        returnedDate,
+        receiptNumber,
+        transactionType,
+        returnedItems,
+        createdAt,
+        updatedAt,
+      };
       return transaction;
     }
   },

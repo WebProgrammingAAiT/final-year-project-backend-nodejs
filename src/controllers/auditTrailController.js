@@ -112,12 +112,18 @@ const auditTrailCtrl = {
         await receivingTransaction.save();
       } else if (transactionFromBlockchain.transactionType == "Requesting_Transaction") {
         transactionFromBlockchain._id = transactionFromBlockchain.id;
+        transactionFromBlockchain.department = transactionFromBlockchain.departmentId;
         for (let i = 0; i < transactionFromBlockchain.requestedItems.length; i++) {
           transactionFromBlockchain.requestedItems[i]._id = transactionFromBlockchain.requestedItems[i].id;
           transactionFromBlockchain.requestedItems[i].itemType = transactionFromBlockchain.requestedItems[i].itemTypeId;
-          transactionFromBlockchain.requestedItems[i].subinventory = transactionFromBlockchain.requestedItems[i].subinventoryId;
+          if (transactionFromBlockchain.requestedItems[i].resolvedBy.length > 0) {
+            transactionFromBlockchain.requestedItems[i].resolvedBy = transactionFromBlockchain.requestedItems[i].resolvedBy;
+          } else {
+            delete transactionFromBlockchain.requestedItems[i].resolvedBy;
+          }
         }
         const requestingTransaction = new RequestingTransactionCollection(transactionFromBlockchain);
+        await requestingTransaction.save();
       }
       return res.json({ msg: "Successfully restored" });
     } catch (err) {

@@ -5,6 +5,7 @@ import ReturningTransactionCollection from "../models/returningTransactionModel.
 import ItemTypeCollection from "../models/itemTypeModel.js";
 import ItemCollection from "../models/itemModel.js";
 import UserCollection from "../models/userModel.js";
+import DepartmentUserCollection from "../models/departmentUserModel.js";
 
 const departmentCtrl = {
   addDepartment: async (req, res) => {
@@ -75,6 +76,11 @@ const departmentCtrl = {
       const department = await DepartmentCollection.findById(id);
       if (!department) {
         return res.status(404).json({ msg: "No department found." });
+      }
+
+      const departmentHasUserAssigned = await DepartmentUserCollection.findOne({ department: id });
+      if (departmentHasUserAssigned) {
+        return res.status(400).json({ msg: "Department has users assigned." });
       }
       const itemBelongingToDepartment = await DepartmentItemCollection.findOne({ department: id });
       if (itemBelongingToDepartment) return res.status(400).json({ msg: "Department has items assigned to it." });

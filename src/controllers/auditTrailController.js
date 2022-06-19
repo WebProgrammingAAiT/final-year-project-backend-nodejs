@@ -100,8 +100,7 @@ const auditTrailCtrl = {
         transactionFromBlockchain = await smartContractInteraction.getTransaction(transactionId, typesOfTransactions[counter]);
         counter++;
       } while (transactionFromBlockchain.id == "");
-      // console.log(transactionFromBlockchain.isReturn);
-      // return res.json({ transactionFromBlockchain });
+
       if (transactionFromBlockchain.transactionType == "Receiving_Transaction") {
         transactionFromBlockchain._id = transactionFromBlockchain.id;
         for (let i = 0; i < transactionFromBlockchain.receivedItems.length; i++) {
@@ -111,6 +110,14 @@ const auditTrailCtrl = {
         }
         const receivingTransaction = new ReceivingTransactionCollection(transactionFromBlockchain);
         await receivingTransaction.save();
+      } else if (transactionFromBlockchain.transactionType == "Requesting_Transaction") {
+        transactionFromBlockchain._id = transactionFromBlockchain.id;
+        for (let i = 0; i < transactionFromBlockchain.requestedItems.length; i++) {
+          transactionFromBlockchain.requestedItems[i]._id = transactionFromBlockchain.requestedItems[i].id;
+          transactionFromBlockchain.requestedItems[i].itemType = transactionFromBlockchain.requestedItems[i].itemTypeId;
+          transactionFromBlockchain.requestedItems[i].subinventory = transactionFromBlockchain.requestedItems[i].subinventoryId;
+        }
+        const requestingTransaction = new RequestingTransactionCollection(transactionFromBlockchain);
       }
       return res.json({ msg: "Successfully restored" });
     } catch (err) {

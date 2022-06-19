@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.post("/purchaseOrders", purchaseOrderCtrl.addPurchaseOrder);
 router.get("/purchaseOrders", purchaseOrderCtrl.getPurchaseOrders);
-router.get("/purchaseOrders/:purchaseOrderNumber", purchaseOrderCtrl.getPurchaseOrder);
+router.get("/purchaseOrders/:purchaseOrderNumber", hasValidToken, isPropertyAdminUser, purchaseOrderCtrl.getPurchaseOrder);
 
 export default router;

@@ -168,7 +168,9 @@ const departmentCtrl = {
       }
       const departmentItems = await DepartmentItemCollection.find({
         department: id,
-      }).populate("itemType", "itemCode name");
+      })
+        .populate("itemType", "itemCode name")
+        .sort({ markedForReturn: 1 });
       return res.status(200).json({ departmentItems });
     } catch (err) {
       return res.status(500).json({ msg: err.message });

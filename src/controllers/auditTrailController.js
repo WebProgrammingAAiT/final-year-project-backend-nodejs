@@ -1,5 +1,10 @@
 import TransactionCollection from "../models/transactionModel.js";
 import BlockchainTransactionCollection from "../models/blockchainTransactionModel.js";
+import ReceivingTransactionCollection from "../models/receivingTransactionModel.js";
+import RequestingTransactionCollection from "../models/requestingTransactionModel.js";
+import TransferringTransactionCollection from "../models/transferringTransactionModel.js";
+import ReturningTransactionCollection from "../models/returningTransactionModel.js";
+import mongoose from "mongoose";
 import smartContractInteraction from "./smartContractInteractionController.js";
 
 const auditTrailCtrl = {
@@ -70,6 +75,44 @@ const auditTrailCtrl = {
 
       transactionFromBlockchain = await smartContractInteraction.getTransaction(transactionFromDb._id, transactionFromDb.type);
       return res.json({ transactionFromDb, transactionFromBlockchain });
+    } catch (err) {
+      return res.status(500).json({ msg: err.message });
+    }
+  },
+
+  restoreTransaction: async (req, res) => {
+    try {
+      const { transactionId } = req.body;
+      if (!transactionId) {
+        return res.status(400).json({ msg: "Transaction id is required" });
+      }
+      const transactionInDb = await TransactionCollection.findById(transactionId);
+      if (transactionInDb) return res.status(400).json({ msg: "Transaction already exists" });
+      let transactionFromBlockchain = {};
+      let typesOfTransactions = [
+        "Receiving_Transaction",
+        "Requesting_Transaction",
+        "Transferring_Transaction",
+        "Returning_Transaction",
+      ];
+      let counter = 0;
+      do {
+        transactionFromBlockchain = await smartContractInteraction.getTransaction(transactionId, typesOfTransactions[counter]);
+        counter++;
+      } while (transactionFromBlockchain.id == "");
+      // console.log(transactionFromBlockchain.isReturn);
+      // return res.json({ transactionFromBlockchain });
+      if (transactionFromBlockchain.transactionType == "Receiving_Transaction") {
+        transactionFromBlockchain._id = transactionFromBlockchain.id;
+        for (let i = 0; i < transactionFromBlockchain.receivedItems.length; i++) {
+          transactionFromBlockchain.receivedItems[i]._id = transactionFromBlockchain.receivedItems[i].id;
+          transactionFromBlockchain.receivedItems[i].itemType = transactionFromBlockchain.receivedItems[i].itemTypeId;
+          transactionFromBlockchain.receivedItems[i].subinventory = transactionFromBlockchain.receivedItems[i].subinventoryId;
+        }
+        const receivingTransaction = new ReceivingTransactionCollection(transactionFromBlockchain);
+        await receivingTransaction.save();
+      }
+      return res.json({ msg: "Successfully restored" });
     } catch (err) {
       return res.status(500).json({ msg: err.message });
     }

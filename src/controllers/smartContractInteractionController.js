@@ -225,14 +225,24 @@ const smartContractInteraction = {
     if (type == "Receiving_Transaction") {
       const received = await auditTrailContract.getReceivingTransaction(transactionId);
 
-      let { id, source, user, receiptNumber, transactionType, receivedItems: receivedItemsFromBlockchain } = received;
+      let {
+        id,
+        source,
+        isReturn,
+        user,
+        receiptNumber,
+        transactionType,
+        receivedItems: receivedItemsFromBlockchain,
+        createdAt,
+        updatedAt,
+      } = received;
       let receivedItems = [];
       for (let i = 0; i < receivedItemsFromBlockchain.length; i++) {
         let receivedItem = receivedItemsFromBlockchain[i];
         let { id, itemTypeId, itemTypeName, quantity, unitCost, subinventoryId, subinventoryName, items } = receivedItem;
         receivedItems.push({ id, itemTypeId, itemTypeName, quantity, unitCost, subinventoryId, subinventoryName, items });
       }
-      let transaction = { id, source, user, receiptNumber, transactionType, receivedItems };
+      let transaction = { id, source, isReturn, user, receiptNumber, transactionType, receivedItems, createdAt, updatedAt };
 
       return transaction;
     } else if (type == "Requesting_Transaction") {

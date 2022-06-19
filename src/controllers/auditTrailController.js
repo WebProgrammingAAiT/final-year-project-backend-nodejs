@@ -8,7 +8,7 @@ const auditTrailCtrl = {
     // let result = await smartContractInteraction.validateTransaction(transaction);
     // return res.json({ result });
     try {
-      const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 });
+      const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 }).limit(10);
       let transactionIdsFromDB = [];
       let validTransactions = [];
       let invalidTransactions = [];
@@ -19,10 +19,9 @@ const auditTrailCtrl = {
         transactionIdsFromDB.push(transaction._id.toString());
         let blockchainTransaction = await BlockchainTransactionCollection.findOne({ transactionId: transaction._id }).lean();
         let result = await smartContractInteraction.validateTransaction(transaction);
-
         if (result == "valid") {
           validTransactions.push({ ethereumTxId: blockchainTransaction?.ethereumTxId, transactionId: transaction._id });
-        } else if (result == "invalid") {
+        } else if (result == "invalid" || result == "invalid status") {
           invalidTransactions.push({ ethereumTxId: blockchainTransaction?.ethereumTxId, transactionId: transaction._id });
         } else {
           missingTransactionsFromBlockchain.push({

@@ -51,6 +51,8 @@ const smartContractInteraction = {
     }
     //removing updated at field from data hash as it can change
     delete receivingTransactionNormal.updatedAt;
+    delete receivingTransactionNormal.__v;
+
     let dataHash = hash(receivingTransactionNormal);
 
     const tx = await auditTrailContract.createReceivingTransaction(
@@ -90,6 +92,7 @@ const smartContractInteraction = {
     }
     //removing updated at field from data hash as it can change
     delete requestingTransactionNormal.updatedAt;
+    delete requestingTransactionNormal.__v;
     let dataHash = hash(requestingTransactionNormal);
 
     const tx = await auditTrailContract.createRequestingTransaction(
@@ -134,6 +137,7 @@ const smartContractInteraction = {
     let departmentName = department.name;
     //removing updated at field from data hash as it can change
     delete transferringTransactionNormal.updatedAt;
+    delete transferringTransactionNormal.__v;
     let dataHash = hash(transferringTransactionNormal);
 
     const tx = await auditTrailContract.createTransferringTransaction(
@@ -174,6 +178,7 @@ const smartContractInteraction = {
     }
     //removing updated at field from data hash as it can change
     delete returningTransactionNormal.updatedAt;
+    delete returningTransactionNormal.__v;
     let dataHash = hash(returningTransactionNormal);
 
     const tx = await auditTrailContract.createReturningTransaction(
@@ -193,8 +198,26 @@ const smartContractInteraction = {
   },
   validateTransaction: async (transaction) => {
     transaction = JSON.parse(JSON.stringify(transaction));
+    let statuses = [];
+    if (transaction.type == "Requesting_Transaction") {
+      for (let i = 0; i < transaction.requestedItems.length; i++) {
+        statuses.push(transaction.requestedItems[i].status);
+        delete transaction.requestedItems[i].status;
+        delete transaction.requestedItems[i].resolvedBy;
+        delete transaction.requestedItems[i].remark;
+      }
+    } else if (transaction.type == "Returning_Transaction") {
+      for (let i = 0; i < transaction.returnedItems.length; i++) {
+        statuses.push(transaction.returnedItems[i].status);
+        delete transaction.returnedItems[i].status;
+        delete transaction.returnedItems[i].resolvedBy;
+      }
+    }
+    delete transaction.updatedAt;
+    delete transaction.__v;
+
     let dataHash = hash(transaction);
-    const validate = await auditTrailContract.validateTransaction(transaction._id, dataHash);
+    const validate = await auditTrailContract.validateTransaction(transaction._id, dataHash, transaction.type, statuses);
     return validate;
   },
   getTransaction: async (transactionId, type) => {

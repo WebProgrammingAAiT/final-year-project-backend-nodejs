@@ -223,6 +223,7 @@ const returningTransactionCtrl = {
       if (!departmentInDB) return res.status(404).json({ msg: "No department found with the specified id." });
 
       let mapOfItemTypeToItem = {};
+      let mappingOfItemsToHaveStatusChanged = {};
 
       // iterating through each item found in items to be Returned
       // and checking if the itemId , subinventory id, returningTransactionId exists
@@ -232,6 +233,7 @@ const returningTransactionCtrl = {
           return res.status(404).json({
             msg: "No returning transaction found with the specified id.",
           });
+
         for (let i = 0; i < value.length; i++) {
           const { subinventoryId, itemId } = value[i];
 
@@ -280,24 +282,23 @@ const returningTransactionCtrl = {
           //checking if the item is there in the returning transaction
           const itemInReturningTransaction = returningTransaction.returnedItems.find((itemInArray) => itemInArray.item == itemId);
           if (!itemInReturningTransaction) return res.status(400).json({ msg: "Item not found in the returning transaction" });
+
           // updating the returningTransaction with the given itemId to approved
-          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
+          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap, index) => {
             if (itemInMap.item == itemId) {
+              if (!mappingOfItemsToHaveStatusChanged[returningTransactionId]) {
+                mappingOfItemsToHaveStatusChanged[returningTransactionId] = {};
+                mappingOfItemsToHaveStatusChanged[returningTransactionId].indexes = [];
+              }
+              // adding the index of the item in the returning transaction
+              mappingOfItemsToHaveStatusChanged[returningTransactionId].indexes.push(index);
               return { ...itemInMap, status: "approved", resolvedBy: user };
             }
             return itemInMap;
           });
         }
         await returningTransaction.save({ session: session });
-        await smartContractInteraction.updateStatus(
-          returningTransactionId,
-          "Returning_Transaction",
-          indexOfItemToHaveStatusChanged,
-          "denied",
-          "",
-          user,
-          requestingTransaction.updatedAt
-        );
+        mappingOfItemsToHaveStatusChanged[returningTransactionId].updatedAt = returningTransaction.updatedAt;
       }
       // checking if items with same itemType but different subinventory exist
       for (let m in mapOfItemTypeToItem) {
@@ -350,6 +351,21 @@ const returningTransactionCtrl = {
         .session(session);
       //not populated document (useful for hashing)
       let tNormal = await ReceivingTransactionCollection.findById(transaction[0]._id).lean().session(session);
+      // updating the status on the blockchain
+      for (const [returningTransactionId, value] of Object.entries(mappingOfItemsToHaveStatusChanged)) {
+        for (let i = 0; i < value.indexes.length; i++) {
+          const index = value.indexes[i];
+          await smartContractInteraction.updateStatus(
+            returningTransactionId,
+            "Returning_Transaction",
+            index,
+            "approved",
+            "",
+            user,
+            mappingOfItemsToHaveStatusChanged[returningTransactionId].updatedAt
+          );
+        }
+      }
 
       await smartContractInteraction.createReceiveTransaction(tPopulated, tNormal);
 
@@ -376,12 +392,14 @@ const returningTransactionCtrl = {
       if (!deniedItems || !user) {
         return res.sendStatus(400);
       }
+      let mappingOfItemsToHaveStatusChanged = {};
       for (const [returningTransactionId, value] of Object.entries(deniedItems)) {
         const returningTransaction = await ReturningTransactionCollection.findById(returningTransactionId);
         if (!returningTransaction)
           return res.status(404).json({
             msg: "No returning transaction found with the specified id.",
           });
+
         // iterating through each item found in items to be denied
         for (let i = 0; i < value.length; i++) {
           const itemId = value[i];
@@ -408,16 +426,38 @@ const returningTransactionCtrl = {
           if (itemInReturningTransaction.status == "approved")
             return res.status(400).json({ msg: "Item is already approved. Can't deny." });
           // updating the returningTransaction with the given itemId to approved
-          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap) => {
+          returningTransaction.returnedItems = returningTransaction.returnedItems.map((itemInMap, index) => {
             if (itemInMap.item == itemId) {
+              if (!mappingOfItemsToHaveStatusChanged[returningTransactionId]) {
+                mappingOfItemsToHaveStatusChanged[returningTransactionId] = {};
+                mappingOfItemsToHaveStatusChanged[returningTransactionId].indexes = [];
+              }
+              // adding the index of the item in the returning transaction
+              mappingOfItemsToHaveStatusChanged[returningTransactionId].indexes.push(index);
+
               return { ...itemInMap, status: "denied", resolvedBy: user };
             }
             return itemInMap;
           });
         }
         await returningTransaction.save({ session: session });
+        mappingOfItemsToHaveStatusChanged[returningTransactionId].updatedAt = returningTransaction.updatedAt;
       }
-
+      // updating the status on the blockchain
+      for (const [returningTransactionId, value] of Object.entries(mappingOfItemsToHaveStatusChanged)) {
+        for (let i = 0; i < value.indexes.length; i++) {
+          const index = value.indexes[i];
+          await smartContractInteraction.updateStatus(
+            returningTransactionId,
+            "Returning_Transaction",
+            index,
+            "denied",
+            "",
+            user,
+            mappingOfItemsToHaveStatusChanged[returningTransactionId].updatedAt
+          );
+        }
+      }
       // only at this point the changes are saved in DB. Anything goes wrong, everything will be rolled back
       await session.commitTransaction();
       return res.status(200).json({ msg: "Item(s) returns denied successfully" });

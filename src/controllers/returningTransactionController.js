@@ -193,6 +193,12 @@ const returningTransactionCtrl = {
             },
           },
         },
+
+        {
+          $sort: {
+            returnedDate: -1,
+          },
+        },
       ]);
       await ItemTypeCollection.populate(pendingReturningTransactions, {
         path: "returnedItems.itemType",

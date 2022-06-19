@@ -127,6 +127,7 @@ const requestingTransactionCtrl = {
             _id: 1,
             department: 1,
             requiredDate: 1,
+            createdAt: 1,
             requestedItems: {
               $filter: {
                 input: "$requestedItems",
@@ -136,6 +137,11 @@ const requestingTransactionCtrl = {
                 },
               },
             },
+          },
+        },
+        {
+          $sort: {
+            createdAt: -1,
           },
         },
       ]);

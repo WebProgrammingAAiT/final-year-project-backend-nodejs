@@ -184,16 +184,11 @@ const userCtrl = {
                 user: mongoose.Types.ObjectId(user._id),
               },
               {
-                "returnedItems.deniedBy": mongoose.Types.ObjectId(user._id),
+                "returnedItems.resolvedBy": mongoose.Types.ObjectId(user._id),
               },
+
               {
-                "returnedItems.approvedBy": mongoose.Types.ObjectId(user._id),
-              },
-              {
-                "requestedItems.approvedBy": mongoose.Types.ObjectId(user._id),
-              },
-              {
-                "requestedItems.deniedBy": mongoose.Types.ObjectId(user._id),
+                "requestedItems.resolvedBy": mongoose.Types.ObjectId(user._id),
               },
             ],
           },

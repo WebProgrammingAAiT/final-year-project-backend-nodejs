@@ -327,8 +327,8 @@ const smartContractInteraction = {
       let returnedItems = [];
       for (let i = 0; i < returnedItemsFromBlockchain.length; i++) {
         let returnedItem = returnedItemsFromBlockchain[i];
-        let { id, item, itemTypeId, itemTypeName, status } = returnedItem;
-        returnedItems.push({ id, item, itemTypeId, itemTypeName, status });
+        let { id, item, itemTypeId, itemTypeName, status, resolvedBy } = returnedItem;
+        returnedItems.push({ id, item, itemTypeId, itemTypeName, status, resolvedBy });
       }
       let transaction = {
         id,

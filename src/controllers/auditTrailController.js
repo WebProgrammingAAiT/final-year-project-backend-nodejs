@@ -124,6 +124,28 @@ const auditTrailCtrl = {
         }
         const requestingTransaction = new RequestingTransactionCollection(transactionFromBlockchain);
         await requestingTransaction.save();
+      } else if (transactionFromBlockchain.transactionType == "Transferring_Transaction") {
+        transactionFromBlockchain._id = transactionFromBlockchain.id;
+        transactionFromBlockchain.department = transactionFromBlockchain.departmentId;
+
+        transactionFromBlockchain.transferredItems.itemType = transactionFromBlockchain.transferredItems.itemTypeId;
+
+        const transferringTransaction = new TransferringTransactionCollection(transactionFromBlockchain);
+        await transferringTransaction.save();
+      } else if (transactionFromBlockchain.transactionType == "Returning_Transaction") {
+        transactionFromBlockchain._id = transactionFromBlockchain.id;
+        transactionFromBlockchain.department = transactionFromBlockchain.departmentId;
+        for (let i = 0; i < transactionFromBlockchain.returnedItems.length; i++) {
+          transactionFromBlockchain.returnedItems[i]._id = transactionFromBlockchain.returnedItems[i].id;
+          transactionFromBlockchain.returnedItems[i].itemType = transactionFromBlockchain.returnedItems[i].itemTypeId;
+          if (transactionFromBlockchain.returnedItems[i].resolvedBy.length > 0) {
+            transactionFromBlockchain.returnedItems[i].resolvedBy = transactionFromBlockchain.returnedItems[i].resolvedBy;
+          } else {
+            delete transactionFromBlockchain.returnedItems[i].resolvedBy;
+          }
+        }
+        const returningTransaction = new ReturningTransactionCollection(transactionFromBlockchain);
+        await returningTransaction.save();
       }
       return res.json({ msg: "Successfully restored" });
     } catch (err) {

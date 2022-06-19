@@ -105,7 +105,9 @@ const departmentCtrl = {
       if (user.role !== "admin" && user.department != id) {
         return res.status(403).json({ msg: "You are not authorized to view this page." });
       }
-      const requestingTransactions = await RequestingTransactionCollection.find({ department: id }).populate("user", "username");
+      const requestingTransactions = await RequestingTransactionCollection.find({ department: id })
+        .populate("user", "username")
+        .sort({ createdAt: -1 });
       await ItemTypeCollection.populate(requestingTransactions, {
         path: "requestedItems.itemType",
         select: "name itemCode",
@@ -140,6 +142,7 @@ const departmentCtrl = {
             _id: 1,
             department: 1,
             returnedDate: 1,
+            createdAt: 1,
             returnedItems: {
               $filter: {
                 input: "$returnedItems",
@@ -149,6 +152,11 @@ const departmentCtrl = {
                 },
               },
             },
+          },
+        },
+        {
+          $sort: {
+            createdAt: -1,
           },
         },
       ]);

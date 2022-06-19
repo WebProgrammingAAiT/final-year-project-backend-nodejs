@@ -13,7 +13,7 @@ const auditTrailCtrl = {
     // let result = await smartContractInteraction.validateTransaction(transaction);
     // return res.json({ result });
     try {
-      const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 }).limit(10);
+      const transactions = await TransactionCollection.find({}).lean().sort({ createdAt: -1 });
       let transactionIdsFromDB = [];
       let validTransactions = [];
       let invalidTransactions = [];

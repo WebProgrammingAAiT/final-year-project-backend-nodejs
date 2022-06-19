@@ -45,6 +45,9 @@ const isPropertyAdminUser = async (req, res, next) => {
     if (user.role !== "propertyAdminUser") {
       return res.sendStatus(403);
     }
+    if (user.isAccountActive == false) {
+      return res.status(403).json({ msg: "Your account is currently deactivated. Please contact your administrator." });
+    }
     next();
   } catch (err) {
     return res.status(500).json({ msg: err.message });
@@ -59,6 +62,9 @@ const isDepartmentUser = async (req, res, next) => {
     }
     if (user.role !== "departmentUser") {
       return res.sendStatus(403);
+    }
+    if (user.isAccountActive == false) {
+      return res.status(403).json({ msg: "Your account is currently deactivated. Please contact your administrator." });
     }
     next();
   } catch (err) {

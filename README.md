@@ -41,11 +41,11 @@ After cloning the repo, this are the steps to follow in order run it:
 - ALCHEMY_KEY =
 
 2. npm install
-   ![installing the packages](/assets/screenshots/install_backend_packages.PNG)
+   - ![installing the packages](/assets/screenshots/install_backend_packages.PNG)
 3. npm run dev
-   ![running the project](/assets/screenshots/run_the_project.PNG)
+   - ![running the project](/assets/screenshots/run_the_project.PNG)
 
 # References
 
-1 MERN Auth Tutorial, https://www.youtube.com/watch?v=npsi7ZkjvQo, Nov 2021
-2 Ethers tutorial, https://www.youtube.com/watch?v=yk7nVp5HTCk, March 2022
+1. MERN Auth Tutorial, https://www.youtube.com/watch?v=npsi7ZkjvQo, Nov 2021
+2. Ethers tutorial, https://www.youtube.com/watch?v=yk7nVp5HTCk, March 2022

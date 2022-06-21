@@ -51,5 +51,5 @@ After cloning the repo, this are the steps to follow in order run it:
 
 # References
 
-1. MERN Auth Tutorial, https://www.youtube.com/watch?v=npsi7ZkjvQo, Nov 2021
-2. Ethers tutorial, https://www.youtube.com/watch?v=yk7nVp5HTCk, March 2022
+- [1] MERN Auth Tutorial, https://www.youtube.com/watch?v=npsi7ZkjvQo, Oct 2020
+- [2] Ethers tutorial, https://www.youtube.com/watch?v=yk7nVp5HTCk, March 2022

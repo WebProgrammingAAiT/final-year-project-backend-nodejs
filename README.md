@@ -18,6 +18,10 @@ Next Generation University ERP System (Property Administration System)
 
 Mr. Wondimagegn Desta
 
+# Summary
+
+Auditing a system is an important part of an application that deals with transactions. The project aimed to provide a sense of confidence on the validity and integrity of the transactions that are happening within the system using the blockchain technology. The Audit Trail implementation is one of the core features this project wanted to demonstrate.
+
 # Tools and Technologies used to develop the system
 
 - Nodejs
